@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getProductById } from "../../services/productsService";
+import { useCart } from "../../context/CartContext";
+
 
 function DetalleProducto() {
   const { id } = useParams(); // lee el id de la URL
+  const { addToCart } = useCart();
   const [product, setProduct] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
@@ -47,9 +50,13 @@ function DetalleProducto() {
 
           <p className="mt-3">{product.description}</p>
 
-          <button className="btn btn-primary mt-3">
-            Agregar al carrito
-          </button>
+          <button
+            className="btn btn-primary mt-3"
+            onClick={() => addToCart(product)}
+        >
+             Agregar al carrito
+            </button>
+
         </div>
       </div>
     </div>

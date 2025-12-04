@@ -14,6 +14,8 @@ import Pantalones from "./pages/catalogo/Pantalones";
 import Buzos from "./pages/catalogo/Buzos";
 
 import DetalleProducto from "./pages/producto/DetalleProducto";
+import Carrito from "./pages/carrito/Carrito";
+
 
 // Admin
 import LoginAdmin from "./pages/LoginAdmin";
@@ -41,6 +43,7 @@ function App() {
                   <Route path="/contacto" element={<Contacto />} />
                   <Route path="/nosotros" element={<Nosotros />} />
                   <Route path="/producto/:id" element={<DetalleProducto />} />
+                  <Route path="/carrito" element={<Carrito />} />
                 </Routes>
               </main>
               <Footer />
