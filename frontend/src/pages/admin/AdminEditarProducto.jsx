@@ -12,9 +12,10 @@ function AdminEditarProducto() {
     category: "",
     description: "",
     price: "",
-    image: "",
+    image: "",      // URL actual (si viene de la BD)
     stock: 0,
     active: true,
+    imageFile: null // archivo nuevo (opcional)
   });
 
   const [loading, setLoading] = useState(true);
@@ -32,6 +33,7 @@ function AdminEditarProducto() {
           image: data.image || "",
           stock: data.stock ?? 0,
           active: data.active ?? true,
+          imageFile: null,
         });
       } catch (err) {
         console.error(err);
@@ -55,6 +57,15 @@ function AdminEditarProducto() {
           : name === "stock"
           ? value
           : value,
+    }));
+  };
+
+  // 👉 archivo de imagen nuevo
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setForm((prev) => ({
+      ...prev,
+      imageFile: file || null,
     }));
   };
 
@@ -84,7 +95,8 @@ function AdminEditarProducto() {
     );
   }
 
-  if (error) {
+  if (error && !form.name) {
+    // error al cargar el producto
     return (
       <div className="container mt-4">
         <p>{error}</p>
@@ -99,7 +111,9 @@ function AdminEditarProducto() {
     <div className="container mt-4">
       <h2>Editar producto #{id}</h2>
 
-      {error && <div className="alert alert-danger mt-3">{error}</div>}
+      {error && form.name && (
+        <div className="alert alert-danger mt-3">{error}</div>
+      )}
 
       <form className="mt-3" onSubmit={handleSubmit}>
         <div className="mb-3">
@@ -154,14 +168,27 @@ function AdminEditarProducto() {
           />
         </div>
 
+        {/* IMAGEN ACTUAL + CAMBIAR IMAGEN */}
         <div className="mb-3">
-          <label className="form-label">URL de imagen</label>
+          <label className="form-label">Imagen actual</label>
+          {form.image ? (
+            <div className="mb-2">
+              <img
+                src={form.image}
+                alt={form.name}
+                style={{ maxWidth: "150px", borderRadius: "4px" }}
+              />
+            </div>
+          ) : (
+            <p className="text-muted">Este producto no tiene imagen.</p>
+          )}
+
+          <label className="form-label">Cambiar imagen</label>
           <input
-            type="text"
+            type="file"
             className="form-control"
-            name="image"
-            value={form.image}
-            onChange={handleChange}
+            accept="image/*"
+            onChange={handleFileChange}
           />
         </div>
 

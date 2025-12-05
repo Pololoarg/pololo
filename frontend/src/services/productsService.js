@@ -16,6 +16,7 @@ export async function getProducts(category) {
 
   return await res.json();
 }
+
 export async function getProductById(id) {
   const url = `${API_URL}/products/${id}`;
 
@@ -40,12 +41,26 @@ export async function deleteProduct(id) {
   return await res.json(); // { message: 'Producto eliminado correctamente' }
 }
 
+// 👇👇 CAMBIAN ESTAS DOS
 
 export async function createProduct(productData) {
+  const formData = new FormData();
+
+  formData.append('name', productData.name);
+  formData.append('category', productData.category);
+  formData.append('description', productData.description || '');
+  formData.append('price', productData.price);
+  formData.append('stock', productData.stock ?? 0);
+  formData.append('active', productData.active);
+
+  // archivo de imagen (si lo hay)
+  if (productData.imageFile) {
+    formData.append('image', productData.imageFile);
+  }
+
   const res = await fetch(`${API_URL}/products`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(productData),
+    body: formData, // ⚠️ sin headers, el navegador pone Content-Type
   });
 
   if (!res.ok) {
@@ -56,10 +71,22 @@ export async function createProduct(productData) {
 }
 
 export async function updateProduct(id, productData) {
+  const formData = new FormData();
+
+  formData.append('name', productData.name);
+  formData.append('category', productData.category);
+  formData.append('description', productData.description || '');
+  formData.append('price', productData.price);
+  formData.append('stock', productData.stock ?? 0);
+  formData.append('active', productData.active);
+
+  if (productData.imageFile) {
+    formData.append('image', productData.imageFile);
+  }
+
   const res = await fetch(`${API_URL}/products/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(productData),
+    body: formData,
   });
 
   if (!res.ok) {
@@ -68,4 +95,3 @@ export async function updateProduct(id, productData) {
 
   return await res.json();
 }
-

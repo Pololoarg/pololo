@@ -5,6 +5,8 @@ import { getProducts,
     updateProduct,
     deleteProduct
 } from "../controllers/products.controller.js";
+import { upload } from '../config/upload.js';
+
 
 const router = Router();
 
@@ -18,10 +20,11 @@ router.get("/:id", getProductById);
 router.get('/', getProducts);
 router.get('/:id', getProductById);
 
-// admin (CRUD)
-router.post('/', createProduct);       // crear producto
-router.put('/:id', updateProduct);     // actualizar producto
-router.delete('/:id', deleteProduct);  // eliminar producto
+// admin (CRUD) con subida de imagen
+router.post('/', upload.single('image'), createProduct);
+router.put('/:id', upload.single('image'), updateProduct);
+router.delete('/:id', deleteProduct);
+
 
 export default router;
 

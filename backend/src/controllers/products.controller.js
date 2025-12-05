@@ -78,7 +78,6 @@ export const createProduct = async (req, res) => {
       .json({ message: 'Nombre, categoría y precio son obligatorios' });
   }
 
-  // Normalizar tipo number
   const priceNumber = Number(price);
   const stockNumber = stock == null ? 0 : Number(stock);
 
@@ -94,7 +93,6 @@ export const createProduct = async (req, res) => {
       .json({ message: 'El stock debe ser un número mayor o igual a 0' });
   }
 
-  // Validar categoría
   const allowedCategories = ['marroquineria', 'remeras', 'pantalones', 'buzos'];
   const normalizedCategory = String(category).toLowerCase();
 
@@ -103,6 +101,11 @@ export const createProduct = async (req, res) => {
   }
 
   try {
+    // 👇 si vino archivo, usamos su ruta; si no, usamos lo que venga en body (o vacío)
+    const imagePath = req.file
+      ? `/uploads/${req.file.filename}`
+      : (image || '');
+
     const result = await pool.query(
       `
       INSERT INTO products (nombre, categoria, descripcion, precio, imagen_url, stock, activo)
@@ -122,7 +125,7 @@ export const createProduct = async (req, res) => {
         normalizedCategory,
         description || '',
         priceNumber,
-        image || '',
+        imagePath,
         stockNumber,
         active,
       ]
@@ -170,6 +173,23 @@ export const updateProduct = async (req, res) => {
   }
 
   try {
+    // Primero obtengo la imagen actual
+    const current = await pool.query(
+      'SELECT imagen_url FROM products WHERE id = $1',
+      [id]
+    );
+
+    if (current.rows.length === 0) {
+      return res.status(404).json({ message: 'Producto no encontrado' });
+    }
+
+    const currentImage = current.rows[0].imagen_url;
+
+    // 👇 Prioridad: archivo nuevo > image del body > imagen actual
+    const imagePath = req.file
+      ? `/uploads/${req.file.filename}`
+      : (image || currentImage || '');
+
     const result = await pool.query(
       `
       UPDATE products
@@ -197,7 +217,7 @@ export const updateProduct = async (req, res) => {
         normalizedCategory,
         description || '',
         priceNumber,
-        image || '',
+        imagePath,
         stockNumber,
         active ?? true,
         id,

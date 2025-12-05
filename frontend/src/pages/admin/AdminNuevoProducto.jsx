@@ -11,13 +11,14 @@ function AdminNuevoProducto() {
     category: "marroquineria",
     description: "",
     price: "",
-    image: "",
     stock: 0,
     active: true,
+    imageFile: null, // archivo real
   });
 
   const [error, setError] = useState(null);
 
+  // 👉 cambios en inputs de texto / número / checkbox
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
@@ -31,6 +32,15 @@ function AdminNuevoProducto() {
           : name === "stock"
           ? value
           : value,
+    }));
+  };
+
+  // 👉 cambios en input file (imagen)
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setForm((prev) => ({
+      ...prev,
+      imageFile: file || null,
     }));
   };
 
@@ -111,14 +121,14 @@ function AdminNuevoProducto() {
           />
         </div>
 
+        {/* IMAGEN */}
         <div className="mb-3">
-          <label className="form-label">URL de imagen</label>
+          <label className="form-label">Imagen del producto</label>
           <input
-            type="text"
+            type="file"
             className="form-control"
-            name="image"
-            value={form.image}
-            onChange={handleChange}
+            accept="image/*"
+            onChange={handleFileChange}
           />
         </div>
 
