@@ -3,6 +3,19 @@ import { useParams } from "react-router-dom";
 import { getProductById } from "../../services/productsService";
 import { useCart } from "../../context/CartContext";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+const BACKEND_BASE_URL = API_URL.replace("/api", "");
+
+const getImageUrl = (image) => {
+  if (!image) return ""; // o podés devolver un placeholder
+
+  // Si ya es una URL completa (http...), la usamos así
+  if (image.startsWith("http")) return image;
+
+  // Si es algo tipo /uploads/archivo.jpg, la pegamos al backend
+  return `${BACKEND_BASE_URL}${image}`;
+};
+
 
 function DetalleProducto() {
   const { id } = useParams(); // lee el id de la URL
@@ -35,8 +48,8 @@ function DetalleProducto() {
         
         {/* IMAGEN */}
         <div className="col-md-6 mb-4">
-          <img 
-            src={product.image}
+          <img
+            src={getImageUrl(product.image)}
             alt={product.name}
             className="img-fluid rounded"
           />
