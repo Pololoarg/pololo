@@ -69,10 +69,37 @@ export const getProductById = async (req, res) => {
 
 // CREAR PRODUCTO  (POST /api/products)
 export const createProduct = async (req, res) => {
-  const { name, category, description, price, image, stock, active } = req.body;
+  let { name, category, description, price, image, stock, active } = req.body;
 
-  if (!name || !category || !price) {
-    return res.status(400).json({ message: 'Nombre, categoría y precio son obligatorios' });
+  // --- VALIDACIONES BÁSICAS ---
+  if (!name || !category || price == null) {
+    return res
+      .status(400)
+      .json({ message: 'Nombre, categoría y precio son obligatorios' });
+  }
+
+  // Normalizar tipo number
+  const priceNumber = Number(price);
+  const stockNumber = stock == null ? 0 : Number(stock);
+
+  if (Number.isNaN(priceNumber) || priceNumber <= 0) {
+    return res
+      .status(400)
+      .json({ message: 'El precio debe ser un número mayor a 0' });
+  }
+
+  if (Number.isNaN(stockNumber) || stockNumber < 0) {
+    return res
+      .status(400)
+      .json({ message: 'El stock debe ser un número mayor o igual a 0' });
+  }
+
+  // Validar categoría
+  const allowedCategories = ['marroquineria', 'remeras', 'pantalones', 'buzos'];
+  const normalizedCategory = String(category).toLowerCase();
+
+  if (!allowedCategories.includes(normalizedCategory)) {
+    return res.status(400).json({ message: 'Categoría inválida' });
   }
 
   try {
@@ -92,11 +119,11 @@ export const createProduct = async (req, res) => {
       `,
       [
         name,
-        category,
+        normalizedCategory,
         description || '',
-        price,
+        priceNumber,
         image || '',
-        stock ?? 0,
+        stockNumber,
         active,
       ]
     );
@@ -111,7 +138,36 @@ export const createProduct = async (req, res) => {
 // ACTUALIZAR PRODUCTO (PUT /api/products/:id)
 export const updateProduct = async (req, res) => {
   const { id } = req.params;
-  const { name, category, description, price, image, stock, active } = req.body;
+  let { name, category, description, price, image, stock, active } = req.body;
+
+  // --- VALIDACIONES BÁSICAS ---
+  if (!name || !category || price == null) {
+    return res
+      .status(400)
+      .json({ message: 'Nombre, categoría y precio son obligatorios' });
+  }
+
+  const priceNumber = Number(price);
+  const stockNumber = stock == null ? 0 : Number(stock);
+
+  if (Number.isNaN(priceNumber) || priceNumber <= 0) {
+    return res
+      .status(400)
+      .json({ message: 'El precio debe ser un número mayor a 0' });
+  }
+
+  if (Number.isNaN(stockNumber) || stockNumber < 0) {
+    return res
+      .status(400)
+      .json({ message: 'El stock debe ser un número mayor o igual a 0' });
+  }
+
+  const allowedCategories = ['marroquineria', 'remeras', 'pantalones', 'buzos'];
+  const normalizedCategory = String(category).toLowerCase();
+
+  if (!allowedCategories.includes(normalizedCategory)) {
+    return res.status(400).json({ message: 'Categoría inválida' });
+  }
 
   try {
     const result = await pool.query(
@@ -138,11 +194,11 @@ export const updateProduct = async (req, res) => {
       `,
       [
         name,
-        category,
+        normalizedCategory,
         description || '',
-        price,
+        priceNumber,
         image || '',
-        stock ?? 0,
+        stockNumber,
         active ?? true,
         id,
       ]
@@ -158,6 +214,7 @@ export const updateProduct = async (req, res) => {
     res.status(500).json({ message: 'Error al actualizar producto' });
   }
 };
+
 
 // ELIMINAR PRODUCTO (DELETE /api/products/:id)
 export const deleteProduct = async (req, res) => {
