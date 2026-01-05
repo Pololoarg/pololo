@@ -59,3 +59,12 @@ export const deleteHomeProduct = async (id) => {
   return data;
 };
 
+export const updateHomeProductOrder = async (items) => {
+  // Actualizar el orden de múltiples productos
+  const promises = items.map((item) =>
+    apiClient.put(`/admin/home/products/${item.id}`, { orden: item.orden })
+  );
+  const responses = await Promise.all(promises);
+  return responses.map(r => r.data);
+};
+

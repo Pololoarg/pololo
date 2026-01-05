@@ -78,10 +78,19 @@ function AdminProductos() {
     <div className="container mt-4">
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h2>Administrar productos</h2>
-        {/* Este botón lo vamos a usar en el siguiente paso para crear productos */}
-        <Link to="/admin/productos/nuevo" className="btn btn-primary">
-          + Nuevo producto
-        </Link>
+        <div className="d-flex gap-2">
+          <div className="btn-group" role="group">
+            <Link to="/admin/home" className="btn btn-outline-primary">
+              Home
+            </Link>
+            <Link to="/admin/productos" className="btn btn-primary">
+              Productos
+            </Link>
+          </div>
+          <Link to="/admin/productos/nuevo" className="btn btn-success">
+            + Nuevo producto
+          </Link>
+        </div>
       </div>
 
               <div className="card mb-3">

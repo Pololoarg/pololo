@@ -17,6 +17,7 @@ function AdminNuevoProducto() {
   });
 
   const [error, setError] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   // 👉 cambios en inputs de texto / número / checkbox
   const handleChange = (e) => {
@@ -38,10 +39,61 @@ function AdminNuevoProducto() {
   // 👉 cambios en input file (imagen)
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    setForm((prev) => ({
-      ...prev,
-      imageFile: file || null,
-    }));
+    
+    if (!file) {
+      setForm((prev) => ({ ...prev, imageFile: null }));
+      setImagePreview(null);
+      return;
+    }
+
+    // Validar tamaño mínimo: 10KB
+    if (file.size < 10 * 1024) {
+      setError("La imagen es muy pequeña. Mínimo 10KB");
+      return;
+    }
+
+    // Validar tamaño máximo: 2MB
+    if (file.size > 2 * 1024 * 1024) {
+      setError("La imagen no puede superar los 2MB");
+      return;
+    }
+
+    // Validar formato
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      setError("Formato no permitido. Solo JPG, PNG o WEBP");
+      return;
+    }
+
+    // Validar dimensiones
+    const img = new Image();
+    const imageUrl = URL.createObjectURL(file);
+    
+    img.onload = () => {
+      URL.revokeObjectURL(imageUrl);
+
+      if (img.width < 600 || img.height < 600) {
+        setError(`Imagen muy pequeña. Mínimo 600x600px. Tu imagen: ${img.width}x${img.height}px`);
+        return;
+      }
+
+      if (img.width > 2000 || img.height > 2000) {
+        setError(`Imagen muy grande. Máximo 2000x2000px. Tu imagen: ${img.width}x${img.height}px`);
+        return;
+      }
+
+      // Validaciones pasadas
+      setError(null);
+      setForm((prev) => ({ ...prev, imageFile: file }));
+      setImagePreview(URL.createObjectURL(file));
+    };
+
+    img.onerror = () => {
+      setError("No se pudo procesar la imagen. Verifica que sea una imagen válida");
+      URL.revokeObjectURL(imageUrl);
+    };
+
+    img.src = imageUrl;
   };
 
   const handleSubmit = async (e) => {
@@ -130,7 +182,35 @@ function AdminNuevoProducto() {
             accept="image/*"
             onChange={handleFileChange}
           />
+          <div className="form-text">
+            <strong>Dimensiones:</strong><br />
+            • Mínimo: 600×600 px | Máximo: 2000×2000 px<br />
+            • <span className="text-primary">Recomendado: 1200×1200 px</span>
+          </div>
         </div>
+
+        {imagePreview && (
+          <div className="mb-3">
+            <p className="mb-2">Preview:</p>
+            <img
+              src={imagePreview}
+              alt="Preview producto"
+              className="img-fluid rounded border mb-2"
+              style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "cover" }}
+            />
+            <button
+              type="button"
+              className="btn btn-danger btn-sm ms-2"
+              onClick={() => {
+                URL.revokeObjectURL(imagePreview);
+                setImagePreview(null);
+                setForm((prev) => ({ ...prev, imageFile: null }));
+              }}
+            >
+              Quitar imagen
+            </button>
+          </div>
+        )}
 
         <div className="mb-3">
           <label className="form-label">Stock</label>

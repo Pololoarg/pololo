@@ -24,6 +24,20 @@ const getHome = async (req, res) => {
   }
 };
 
+// GET /api/home/products
+const getHomeProducts = async (req, res) => {
+  try {
+    const products = await getActiveHomeProducts();
+    return res.status(200).json(products);
+  } catch (error) {
+    console.error('Error al obtener productos destacados:', error);
+    return res.status(500).json({
+      message: 'Error al obtener productos destacados',
+    });
+  }
+};
+
 export{
   getHome,
+  getHomeProducts,
 };

@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { Link } from "react-router-dom";
 import {
   getAdminCarousel,
   getAdminHomeProducts,
@@ -6,7 +7,9 @@ import {
   createHomeProduct,
   deleteCarouselImage,
   toggleCarouselImage,
-  updateCarouselOrder
+  updateCarouselOrder,
+  deleteHomeProduct,
+  updateHomeProductOrder
 } from "../../services/adminHome.service";
 
 import { searchProductsAdmin } from "../../services/productsService";
@@ -18,6 +21,7 @@ const AdminHome = () => {
   const [homeProducts, setHomeProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [draggedItem, setDraggedItem] = useState(null);
+  const [draggedProductItem, setDraggedProductItem] = useState(null);
 
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
@@ -219,7 +223,7 @@ const handleDrop = async (e, targetItem) => {
           // Obtener el máximo orden actual
           const maxOrden = carousel.length > 0 
             ? Math.max(...carousel.map(item => item.orden || 0))
-            : -1;
+            : 0;
           orden = maxOrden + 1;
         }
 
@@ -262,6 +266,75 @@ const handleDrop = async (e, targetItem) => {
     img.src = imageUrl;
   };
 
+  const handleDeleteProduct = async (home_product_id) => {
+    const confirm = window.confirm("¿Eliminar este producto destacado?");
+    if (!confirm) return;
+
+    try {
+      const deletedItem = homeProducts.find(item => item.home_product_id === home_product_id);
+      const deletedOrder = deletedItem?.orden || 0;
+
+      await deleteHomeProduct(home_product_id);
+
+      const itemsToUpdate = homeProducts
+        .filter(item => item.id !== home_product_id && item.orden > deletedOrder)
+        .map(item => ({
+          ...item,
+          orden: item.orden - 1
+        }));
+
+      if (itemsToUpdate.length > 0) {
+        await updateHomeProductOrder(itemsToUpdate);
+      }
+
+      loadData();
+    } catch (error) {
+      console.error("Error eliminando producto:", error);
+    }
+  };
+
+  // Drag & Drop para productos
+  const handleProductDragStart = (e, item) => {
+    setDraggedProductItem(item);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleProductDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleProductDrop = async (e, targetItem) => {
+    e.preventDefault();
+    
+    if (!draggedProductItem || draggedProductItem.id === targetItem.id) {
+      setDraggedProductItem(null);
+      return;
+    }
+
+    try {
+      const newProducts = homeProducts.map((item) => {
+        if (item.id === draggedProductItem.id) {
+          return { ...item, orden: targetItem.orden };
+        }
+        if (item.id === targetItem.id) {
+          return { ...item, orden: draggedProductItem.orden };
+        }
+        return item;
+      });
+
+      newProducts.sort((a, b) => a.orden - b.orden);
+      setHomeProducts(newProducts);
+
+      await updateHomeProductOrder(newProducts);
+    } catch (error) {
+      console.error("Error actualizando orden de productos:", error);
+      loadData();
+    } finally {
+      setDraggedProductItem(null);
+    }
+  };
+
   const handleSearch = async (value) => {
     setSearch(value);
 
@@ -287,9 +360,18 @@ const handleDrop = async (e, targetItem) => {
     }
 
     try {
+      // Calcular orden automáticamente si no se especificó
+      let orden = Number(productForm.orden);
+      if (!productForm.orden || orden === 0) {
+        const maxOrden = homeProducts.length > 0 
+          ? Math.max(...homeProducts.map(item => item.orden || 0))
+          : 0;
+        orden = maxOrden + 1;
+      }
+
       await createHomeProduct({
         product_id: productForm.product_id,
-        orden: Number(productForm.orden),
+        orden: orden,
       });
 
       setProductForm({ product_id: null, orden: "" });
@@ -306,7 +388,17 @@ const handleDrop = async (e, targetItem) => {
 
   return (
     <div className="container mt-4">
-      <h1>Admin Home</h1>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1>Admin Home</h1>
+        <div className="btn-group" role="group">
+          <Link to="/admin/home" className="btn btn-primary">
+            Home
+          </Link>
+          <Link to="/admin/productos" className="btn btn-outline-primary">
+            Productos
+          </Link>
+        </div>
+      </div>
 
       {/* ===================== */}
       {/* CARRUSEL */}
@@ -374,30 +466,17 @@ const handleDrop = async (e, targetItem) => {
           </div>
         )}
 
-        <div className="row g-2 mb-3">
-          <div className="col-md-8">
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Título (opcional)"
-              value={carouselForm.titulo}
-              onChange={(e) =>
-                setCarouselForm({ ...carouselForm, titulo: e.target.value })
-              }
-            />
-          </div>
-          <div className="col-md-4">
-            <input
-              type="number"
-              className="form-control"
-              placeholder="Orden"
-              min="0"
-              value={carouselForm.orden}
-              onChange={(e) =>
-                setCarouselForm({ ...carouselForm, orden: e.target.value })
-              }
-            />
-          </div>
+        <div className="mb-3">
+          <input
+            type="number"
+            className="form-control"
+            placeholder="Orden (opcional)"
+            min="1"
+            value={carouselForm.orden}
+            onChange={(e) =>
+              setCarouselForm({ ...carouselForm, orden: e.target.value })
+            }
+          />
         </div>
 
         <button type="submit" className="btn btn-primary">Agregar imagen</button>
@@ -459,66 +538,175 @@ const handleDrop = async (e, targetItem) => {
       {/* ===================== */}
       <h4 className="mt-5 mb-3">Productos Destacados</h4>
 
-      <div className="mb-3">
-        <label className="form-label">Buscar producto</label>
-        <input
-          type="text"
-          className="form-control"
-          placeholder="Buscar producto..."
-          value={search}
-          onChange={(e) => handleSearch(e.target.value)}
-        />
-      </div>
-
-      {searchResults.length > 0 && (
-        <ul className="list-group mb-3">
-          {searchResults.map((product) => (
-            <li key={product.id} className="list-group-item d-flex justify-content-between align-items-center">
-              <div>
-                <strong>{product.nombre}</strong>
-                <span className="text-muted ms-2">${product.precio}</span>
-              </div>
-              <button
-                className="btn btn-sm btn-outline-primary"
-                onClick={() =>
-                  setProductForm({
-                    product_id: product.id,
-                    orden: "",
-                  })
-                }
-              >
-                Seleccionar
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <form onSubmit={handleProductSubmit}>
-        <div className="row g-2">
-          <div className="col-auto flex-grow-1">
+      <div className="card mb-4">
+        <div className="card-body">
+          <h6 className="card-title mb-3">Agregar producto destacado</h6>
+          
+          <div className="mb-3">
+            <label className="form-label">Buscar producto</label>
             <input
-              type="number"
+              type="text"
               className="form-control"
-              placeholder="Orden"
-              min="0"
-              value={productForm.orden}
-              onChange={(e) =>
-                setProductForm({ ...productForm, orden: e.target.value })
-              }
+              placeholder="Buscar producto..."
+              value={search}
+              onChange={(e) => handleSearch(e.target.value)}
             />
           </div>
-          <div className="col-auto">
-            <button 
-              type="submit" 
-              className="btn btn-success"
-              disabled={!productForm.product_id}
-            >
-              Agregar producto destacado
-            </button>
+
+          {searchResults.length > 0 && (
+            <div className="mb-3">
+              <label className="form-label">Resultados de búsqueda</label>
+              <ul className="list-group">
+                {searchResults.map((product) => (
+                  <li 
+                    key={product.id} 
+                    className="list-group-item d-flex justify-content-between align-items-center cursor-pointer"
+                    onClick={() =>
+                      setProductForm({
+                        product_id: product.id,
+                        orden: "",
+                      })
+                    }
+                    style={{ cursor: "pointer" }}
+                  >
+                    <div>
+                      <strong>{product.nombre}</strong>
+                      <span className="text-muted ms-2 small">${product.precio}</span>
+                    </div>
+                    <span className="badge bg-primary">Seleccionar</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {productForm.product_id && (
+            <div className="alert alert-info mb-3" role="alert">
+              {(() => {
+                const selectedProduct = searchResults.find(p => p.id === productForm.product_id);
+                return (
+                  <div>
+                    <strong>Producto seleccionado:</strong>
+                    {selectedProduct && (
+                      <div className="mt-2">
+                        {selectedProduct.imagen && (
+                          <img
+                            src={selectedProduct.imagen}
+                            alt={selectedProduct.nombre}
+                            className="img-fluid rounded mb-2"
+                            style={{ maxWidth: "100%", maxHeight: "200px", objectFit: "cover" }}
+                          />
+                        )}
+                        <div className="mt-2">
+                          <p className="mb-1"><strong>{selectedProduct.nombre}</strong></p>
+                          <p className="text-muted small mb-0">${selectedProduct.precio}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          <form onSubmit={handleProductSubmit}>
+            <div className="row g-2">
+              <div className="col-md-8">
+                <input
+                  type="number"
+                  className="form-control"
+                  placeholder="Orden (opcional)"
+                  min="1"
+                  value={productForm.orden}
+                  onChange={(e) =>
+                    setProductForm({ ...productForm, orden: e.target.value })
+                  }
+                />
+                <div className="form-text">Dejá vacío para orden automática</div>
+              </div>
+              <div className="col-md-4">
+                <button 
+                  type="submit" 
+                  className="btn btn-success w-100"
+                  disabled={!productForm.product_id}
+                >
+                  Agregar
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {homeProducts.length > 0 && (
+  <>
+    <h6 className="mb-3">
+      Productos cargados ({homeProducts.length})
+    </h6>
+
+    <div className="row g-3 mb-4">
+      {homeProducts.map((item) => (
+        <div key={item.home_product_id} className="col-12 col-sm-6 col-lg-4">
+          <div
+            draggable
+            onDragStart={(e) => handleProductDragStart(e, item)}
+            onDragOver={handleProductDragOver}
+            onDrop={(e) => handleProductDrop(e, item)}
+            className="card h-100"
+            style={{
+              cursor: "move",
+              opacity: draggedProductItem?.home_product_id === item.home_product_id ? 0.7 : 1,
+              border:
+                draggedProductItem?.home_product_id === item.home_product_id
+                  ? "2px solid #007bff"
+                  : "1px solid #dee2e6",
+            }}
+          >
+            {item.imagen && (
+              <img
+                src={`${API_URL}${item.imagen}`}
+                alt={item.nombre}
+                className="card-img-top"
+                style={{
+                  height: "180px",
+                  objectFit: "cover",
+                }}
+              />
+            )}
+
+            <div className="card-body">
+              <h6 className="card-title">{item.nombre}</h6>
+
+              <p className="card-text text-muted small mb-1">
+                Precio: <strong>${item.precio}</strong>
+              </p>
+
+              <p className="card-text text-muted small mb-2">
+                Orden: <strong>{item.orden}</strong>
+              </p>
+
+              <div className="d-grid gap-2">
+                <button
+                  onClick={() => handleDeleteProduct(item.home_product_id)}
+                  className="btn btn-sm btn-danger"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </form>
+      ))}
+    </div>
+  </>
+)}
+
+
+      {homeProducts.length === 0 && search.length === 0 && (
+        <div className="alert alert-info" role="alert">
+          No hay productos destacados. Búscalos con el buscador para agregarlos.
+        </div>
+      )}
     </div>
   );
 };

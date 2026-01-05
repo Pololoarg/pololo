@@ -16,9 +16,18 @@ const getActiveHomeProducts = async () => {
 
 export const getHomeProductsAdmin = async () => {
     const result = await pool.query(`
-        SELECT *
-        FROM home_products
-        ORDER BY orden
+        SELECT
+        hp.id           AS home_product_id,
+        hp.orden,
+        hp.activo,
+        hp.product_id,
+
+        p.nombre,
+        p.precio,
+        p.imagen_url
+        FROM home_products hp
+        JOIN products p ON p.id = hp.product_id
+        ORDER BY hp.orden
     `);
     return result.rows;
 };

@@ -120,19 +120,29 @@ const getAdminHomeProducts = async (req, res) => {
 };
 // POST /api/admin/home/products
 const addHomeProduct = async (req, res) => {
-    try {
-        const { product_id, orden } = req.body;
-        const product = await createHomeProduct({ product_id, orden });
-        return res.status(201).json(product);
-    } catch (error) {
-        console.error('Error al agregar producto destacado:', error);
-        return res.status(500).json({ message: 'Error al agregar producto destacado' });
-    }   
+  try {
+    const { product_id, orden } = req.body || {};
+
+    if (!product_id) {
+      return res.status(400).json({ message: "product_id es obligatorio" });
+    }
+
+    const product = await createHomeProduct({ product_id, orden });
+    return res.status(201).json(product);
+
+  } catch (error) {
+    console.error('Error al agregar producto destacado:', error);
+    return res.status(500).json({ message: 'Error al agregar producto destacado' });
+  }
 };
 // PUT /api/admin/home/products/:id
 const editHomeProduct = async (req, res) => {
     try {
         const { id } = req.params;
+
+        if (!req.body || Object.keys(req.body).length === 0) {
+         return res.status(400).json({ message: "No hay datos para actualizar" });}
+
         const product = await updateHomeProduct(id, req.body);
         return res.status(200).json(product);
     } catch (error) {
@@ -153,15 +163,21 @@ const removeHomeProduct = async (req, res) => {
 };
 // PATCH /api/admin/home/products/:id/toggle
 const toggleHomeProductActive = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { activo } = req.body;
-        const product = await toggleHomeProduct(id, activo);
-        return res.status(200).json(product);
-    } catch (error) {
-        console.error('Error al activar/desactivar producto destacado:', error);
-        return res.status(500).json({ message: 'Error al activar/desactivar producto destacado' });
+  try {
+    const { id } = req.params;
+    const { activo } = req.body || {};
+
+    if (typeof activo !== "boolean") {
+      return res.status(400).json({ message: "activo debe ser booleano" });
     }
+
+    const product = await toggleHomeProduct(id, activo);
+    return res.status(200).json(product);
+
+  } catch (error) {
+    console.error('Error al activar/desactivar producto destacado:', error);
+    return res.status(500).json({ message: 'Error al activar/desactivar producto destacado' });
+  }
 };
 
 export{

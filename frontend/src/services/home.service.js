@@ -7,3 +7,9 @@ export const getHome = async () => {
   const response = await axios.get(`${API_URL}/home`);
   return response.data;
 };
+
+// services/home.service.js
+export const getHomeProducts = async () => {
+  const response = await axios.get(`${API_URL}/home/products`);
+  return response.data;
+};
