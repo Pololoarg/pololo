@@ -93,13 +93,13 @@ export const getProductById = async (req, res) => {
     const productResult = await pool.query(
       `
       SELECT
-        id,
-        nombre      AS name,
-        categoria   AS category,
-        descripcion AS description,
-        precio      AS price,
-        imagen_url  AS image,
-        activo      AS active,
+        p.id,
+        p.nombre      AS name,
+        p.categoria   AS category,
+        p.descripcion AS description,
+        p.precio      AS price,
+        p.imagen_url  AS image,
+        p.activo      AS active,
         COALESCE(SUM(ps.stock), 0) AS stock_total
       FROM products p
       LEFT JOIN product_sizes ps ON ps.product_id = p.id
@@ -119,6 +119,7 @@ export const getProductById = async (req, res) => {
       `
       SELECT
         st.nombre AS size_type,
+        s.id      AS size_id,
         s.valor   AS size,
         ps.stock
       FROM product_sizes ps
@@ -135,6 +136,7 @@ export const getProductById = async (req, res) => {
         ? {
             type: sizesResult.rows[0].size_type,
             items: sizesResult.rows.map(r => ({
+              id: r.size_id,
               size: r.size,
               stock: r.stock
             }))
@@ -237,7 +239,17 @@ export const createProduct = async (req, res) => {
   const client = await pool.connect();
 
   try {
-    const { name, category, description, price, image, active, sizes } = req.body;
+    let { name, category, description, price, image, active, sizes } = req.body;
+
+    // Si sizes viene como string JSON, parsearlo
+    if (typeof sizes === 'string') {
+      try {
+        sizes = JSON.parse(sizes);
+      } catch (e) {
+        console.error('Error parseando sizes:', e);
+        sizes = [];
+      }
+    }
 
     // --- VALIDACIONES BÁSICAS ---
     if (!name || !category || price == null) {

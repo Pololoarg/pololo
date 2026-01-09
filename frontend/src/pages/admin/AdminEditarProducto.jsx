@@ -20,6 +20,7 @@ function AdminEditarProducto() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
+  const [initialLoad, setInitialLoad] = useState(true);
   
   // Estados para talles
   const [availableSizes, setAvailableSizes] = useState([]);
@@ -53,6 +54,7 @@ function AdminEditarProducto() {
         setError("No se pudo cargar el producto");
       } finally {
         setLoading(false);
+        setInitialLoad(false);
       }
     })();
   }, [id]);
@@ -64,6 +66,9 @@ function AdminEditarProducto() {
       
       if (category === 'marroquineria') {
         setAvailableSizes([]);
+        if (!initialLoad) {
+          setSelectedSizes([]);
+        }
         return;
       }
 
@@ -88,7 +93,7 @@ function AdminEditarProducto() {
     if (form.category) {
       loadSizes();
     }
-  }, [form.category]);
+  }, [form.category, initialLoad]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

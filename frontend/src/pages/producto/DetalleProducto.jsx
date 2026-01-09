@@ -23,12 +23,19 @@ function DetalleProducto() {
   const [product, setProduct] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
+  const [selectedSize, setSelectedSize] = useState(null);
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     (async () => {
       try {
         const data = await getProductById(id);
         setProduct(data);
+        
+        // Si tiene talles, seleccionar el primero por defecto
+        if (data.sizes && data.sizes.items && data.sizes.items.length > 0) {
+          setSelectedSize(data.sizes.items[0]);
+        }
       } catch (err) {
         console.error(err);
         setError("No se pudo cargar el producto");
@@ -37,6 +44,25 @@ function DetalleProducto() {
       }
     })();
   }, [id]);
+
+  const handleAddToCart = () => {
+    if (product.sizes && product.sizes.items && product.sizes.items.length > 0) {
+      if (!selectedSize) {
+        alert("Por favor, selecciona un talle");
+        return;
+      }
+      if (selectedSize.stock < quantity) {
+        alert("Stock insuficiente para este talle");
+        return;
+      }
+    }
+    
+    addToCart({
+      ...product,
+      selectedSize: selectedSize?.size,
+      quantity
+    });
+  };
 
   if (loading) return <div className="container mt-4"><p>Cargando producto...</p></div>;
   if (error)   return <div className="container mt-4"><p>{error}</p></div>;
@@ -58,17 +84,84 @@ function DetalleProducto() {
         {/* INFORMACIÓN */}
         <div className="col-md-6">
           <h2>{product.name}</h2>
-          <p className="text-muted">{product.category}</p>
+          <p className="text-muted text-capitalize">{product.category}</p>
           <h4 className="fw-bold mt-3">${product.price}</h4>
 
           <p className="mt-3">{product.description}</p>
 
+          {/* TALLES */}
+          {product.sizes && product.sizes.items && product.sizes.items.length > 0 && (
+            <div className="mt-4">
+              <h5>Talles disponibles:</h5>
+              <div className="d-flex flex-wrap gap-2 mt-2">
+                {product.sizes.items.map((sizeItem) => (
+                  <button
+                    key={sizeItem.size}
+                    className={`btn ${
+                      selectedSize?.size === sizeItem.size
+                        ? "btn-primary"
+                        : "btn-outline-primary"
+                    } ${sizeItem.stock === 0 ? "disabled" : ""}`}
+                    onClick={() => setSelectedSize(sizeItem)}
+                    disabled={sizeItem.stock === 0}
+                  >
+                    {sizeItem.size}
+                    {sizeItem.stock === 0 && <small className="d-block">(Sin stock)</small>}
+                  </button>
+                ))}
+              </div>
+              {selectedSize && (
+                <p className="mt-2 text-muted">
+                  Stock disponible: <strong>{selectedSize.stock}</strong> unidades
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* CANTIDAD */}
+          {(!product.sizes || product.sizes.items.length === 0) && (
+            <div className="mt-4">
+              <label className="form-label">Cantidad:</label>
+              <input
+                type="number"
+                className="form-control"
+                style={{ maxWidth: "100px" }}
+                min="1"
+                max={product.stock_total || 999}
+                value={quantity}
+                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+              />
+              {product.stock_total > 0 && (
+                <small className="text-muted">Stock disponible: {product.stock_total}</small>
+              )}
+            </div>
+          )}
+
+          {product.sizes && product.sizes.items && product.sizes.items.length > 0 && selectedSize && (
+            <div className="mt-3">
+              <label className="form-label">Cantidad:</label>
+              <input
+                type="number"
+                className="form-control"
+                style={{ maxWidth: "100px" }}
+                min="1"
+                max={selectedSize.stock}
+                value={quantity}
+                onChange={(e) => setQuantity(Math.max(1, Math.min(selectedSize.stock, parseInt(e.target.value) || 1)))}
+              />
+            </div>
+          )}
+
           <button
             className="btn btn-primary mt-3"
-            onClick={() => addToCart(product)}
-        >
-             Agregar al carrito
-            </button>
+            onClick={handleAddToCart}
+            disabled={
+              (product.sizes && product.sizes.items && product.sizes.items.length > 0 && !selectedSize) ||
+              (selectedSize && selectedSize.stock < quantity)
+            }
+          >
+            Agregar al carrito
+          </button>
 
         </div>
       </div>

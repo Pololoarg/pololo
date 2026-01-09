@@ -112,11 +112,15 @@ export async function createProduct(productData) {
   formData.append('category', productData.category);
   formData.append('description', productData.description || '');
   formData.append('price', productData.price);
-  formData.append('stock', productData.stock ?? 0);
   formData.append('active', productData.active);
 
   if (productData.imageFile) {
     formData.append('image', productData.imageFile);
+  }
+
+  // Agregar talles si existen
+  if (productData.sizes && productData.sizes.length > 0) {
+    formData.append('sizes', JSON.stringify(productData.sizes));
   }
 
   const res = await fetch(`${API_URL}/products`, {
@@ -142,7 +146,6 @@ export async function updateProduct(id, productData) {
   formData.append('category', productData.category);
   formData.append('description', productData.description || '');
   formData.append('price', productData.price);
-  formData.append('stock', productData.stock ?? 0);
   formData.append('active', productData.active);
 
   if (productData.imageFile) {
@@ -159,5 +162,23 @@ export async function updateProduct(id, productData) {
     throw new Error('Error al actualizar el producto');
   }
 
-  return await res.json();
+  const result = await res.json();
+
+  // Actualizar talles si existen
+  if (productData.sizes && productData.sizes.length > 0) {
+    const sizesRes = await fetch(`${API_URL}/products/${id}/sizes`, {
+      method: 'PUT',
+      headers: {
+        ...authHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ sizes: productData.sizes }),
+    });
+
+    if (!sizesRes.ok) {
+      throw new Error('Error al actualizar talles del producto');
+    }
+  }
+
+  return result;
 }
