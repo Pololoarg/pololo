@@ -46,22 +46,35 @@ function DetalleProducto() {
   }, [id]);
 
   const handleAddToCart = () => {
+    // Validar si el producto tiene talles
     if (product.sizes && product.sizes.items && product.sizes.items.length > 0) {
       if (!selectedSize) {
-        alert("Por favor, selecciona un talle");
+        alert("❌ Por favor, selecciona un talle");
         return;
       }
       if (selectedSize.stock < quantity) {
-        alert("Stock insuficiente para este talle");
+        alert(`❌ Stock insuficiente. Disponible: ${selectedSize.stock} unidades`);
+        return;
+      }
+    } else {
+      // Si no tiene talles, validar el stock total
+      const stockDisponible = product.stock_total || product.stock || 0;
+      if (stockDisponible < quantity) {
+        alert(`❌ Stock insuficiente. Disponible: ${stockDisponible} unidades`);
         return;
       }
     }
     
-    addToCart({
+    const success = addToCart({
       ...product,
+      stock: selectedSize?.stock || product.stock_total || product.stock,
       selectedSize: selectedSize?.size,
       quantity
     });
+    
+    if (success) {
+      alert("✅ Producto agregado al carrito");
+    }
   };
 
   if (loading) return <div className="container mt-4"><p>Cargando producto...</p></div>;

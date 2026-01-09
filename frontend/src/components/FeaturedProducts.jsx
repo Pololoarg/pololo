@@ -23,14 +23,24 @@ const FeaturedProducts = () => {
   }, []);
 
   const handleAddToCart = (product) => {
-    addToCart({
+    if (product.stock <= 0) {
+      alert("❌ Producto sin stock disponible");
+      return;
+    }
+    
+    const success = addToCart({
       id: product.id,
       name: product.nombre,
       price: product.precio,
       image: product.imagen_url,
       stock: product.stock,
       category: product.categoria || '',
+      quantity: 1
     });
+    
+    if (success) {
+      alert("✅ Producto agregado al carrito");
+    }
   };
 
   const handleViewProduct = (productId) => {

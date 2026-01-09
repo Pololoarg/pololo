@@ -22,7 +22,8 @@ function Carrito() {
     let message = "Hola! Quiero hacer el siguiente pedido:%0A%0A";
 
     cart.forEach((item) => {
-      message += `- ${item.quantity}x ${item.name} ($${item.price})%0A`;
+      const talle = item.selectedSize ? ` - Talle ${item.selectedSize}` : '';
+      message += `- ${item.quantity}x ${item.name}${talle} ($${item.price})%0A`;
     });
 
     message += `%0ATotal: $${totalPrice}`;
@@ -48,7 +49,7 @@ function Carrito() {
 
       {/* LISTA DE PRODUCTOS */}
       {cart.map((item) => (
-        <div key={item.id} className="card mb-3">
+        <div key={`${item.id}-${item.selectedSize || 'sin-talle'}`} className="card mb-3">
           <div className="row g-0">
             
             {/* IMAGEN */}
@@ -63,7 +64,12 @@ function Carrito() {
             {/* DETALLES */}
             <div className="col-md-9">
               <div className="card-body">
-                <h5 className="card-title">{item.name}</h5>
+                <h5 className="card-title">
+                  {item.name}
+                  {item.selectedSize && (
+                    <span className="badge bg-info ms-2">Talle: {item.selectedSize}</span>
+                  )}
+                </h5>
                 <p className="card-text text-muted">{item.category}</p>
                 <p className="fw-bold">${item.price}</p>
 
@@ -71,7 +77,7 @@ function Carrito() {
                 <div className="d-flex align-items-center gap-3 mt-2">
                   <button
                     className="btn btn-outline-secondary"
-                    onClick={() => decreaseQuantity(item.id)}
+                    onClick={() => decreaseQuantity(item.id, item.selectedSize)}
                   >
                     -
                   </button>
@@ -81,7 +87,7 @@ function Carrito() {
                   <button
                     className="btn btn-outline-secondary"
                     disabled={item.quantity >= item.stock}
-                    onClick={() => increaseQuantity(item.id)}
+                    onClick={() => increaseQuantity(item.id, item.selectedSize)}
                   >
                     +
                   </button>
@@ -97,7 +103,7 @@ function Carrito() {
                 {/* BOTÓN ELIMINAR */}
                 <button
                   className="btn btn-danger mt-3"
-                  onClick={() => removeFromCart(item.id)}
+                  onClick={() => removeFromCart(item.id, item.selectedSize)}
                 >
                   Eliminar
                 </button>

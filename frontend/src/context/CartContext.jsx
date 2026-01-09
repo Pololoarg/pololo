@@ -26,69 +26,84 @@ export function CartProvider({ children }) {
 
   /* ===========================
      AGREGAR PRODUCTO
+     (Diferencia por talle/tamaño)
   =========================== */
   function addToCart(product) {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
+    // Validar stock disponible
+    const stockDisponible = product.stock || 0;
+    if (stockDisponible <= 0) {
+      alert("❌ Producto sin stock disponible");
+      return false;
+    }
 
-      // Si ya está en el carrito
+    setCart((prev) => {
+      // Buscar producto con el MISMO ID Y TALLE (si tiene)
+      const existing = prev.find(
+        (item) => item.id === product.id && item.selectedSize === product.selectedSize
+      );
+
+      // Si ya está en el carrito con el mismo talle
       if (existing) {
-        if (existing.quantity >= product.stock) {
-          alert("No hay más stock disponible");
+        const cantidadTotal = existing.quantity + (product.quantity || 1);
+        if (cantidadTotal > stockDisponible) {
+          alert(`❌ No hay suficiente stock. Disponible: ${stockDisponible} unidades. Ya tienes: ${existing.quantity}`);
           return prev;
         }
 
         return prev.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
+          item.id === product.id && item.selectedSize === product.selectedSize
+            ? { ...item, quantity: cantidadTotal }
             : item
         );
       }
 
-      // Si no hay stock
-      if (product.stock <= 0) {
-        alert("Producto sin stock");
-        return prev;
-      }
-
-      // Nuevo producto
-      return [...prev, { ...product, quantity: 1 }];
+      // Nuevo producto (o producto con diferente talle)
+      return [...prev, { ...product, quantity: product.quantity || 1 }];
     });
+    return true;
   }
 
   /* ===========================
      QUITAR PRODUCTO
+     (Por ID y talle si tiene)
   =========================== */
-  function removeFromCart(id) {
-    setCart((prev) => prev.filter((item) => item.id !== id));
-  }
-
-  /* ===========================
-     AUMENTAR CANTIDAD
-  =========================== */
-  function increaseQuantity(id) {
-    setCart((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) return item;
-
-        if (item.quantity >= item.stock) {
-          alert("No hay más stock disponible");
-          return item;
-        }
-
-        return { ...item, quantity: item.quantity + 1 };
-      })
+  function removeFromCart(id, selectedSize = null) {
+    setCart((prev) => 
+      prev.filter((item) => !(item.id === id && item.selectedSize === selectedSize))
     );
   }
 
   /* ===========================
-     DISMINUIR CANTIDAD
+     AUMENTAR CANTIDAD
+     (Por ID y talle si tiene)
   =========================== */
-  function decreaseQuantity(id) {
+  function increaseQuantity(id, selectedSize = null) {
+    setCart((prev) => {
+      const item = prev.find((item) => item.id === id && item.selectedSize === selectedSize);
+      if (!item) return prev;
+      
+      if (item.quantity >= item.stock) {
+        alert(`❌ Stock máximo alcanzado. Disponible: ${item.stock} unidades`);
+        return prev;
+      }
+      
+      return prev.map((cartItem) =>
+        cartItem.id === id && cartItem.selectedSize === selectedSize
+          ? { ...cartItem, quantity: cartItem.quantity + 1 }
+          : cartItem
+      );
+    });
+  }
+
+  /* ===========================
+     DISMINUIR CANTIDAD
+     (Por ID y talle si tiene)
+  =========================== */
+  function decreaseQuantity(id, selectedSize = null) {
     setCart((prev) =>
       prev
         .map((item) =>
-          item.id === id
+          item.id === id && item.selectedSize === selectedSize
             ? { ...item, quantity: item.quantity - 1 }
             : item
         )
