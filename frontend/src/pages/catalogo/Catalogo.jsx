@@ -3,8 +3,6 @@ import { getProducts } from "../../services/productsService";
 import { Link, useSearchParams } from "react-router-dom";
 import { getImageUrl } from "../../utils/imageUrl";
 import FiltersBlock from "../../components/filters/FiltersBlock";
-import { FILTERS_BY_PAGE } from "../../components/filters/filters.config";
-
 
 function Catalogo() {
   const [products, setProducts] = useState([]);
@@ -12,48 +10,56 @@ function Catalogo() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
 
-const [searchParams, setSearchParams] = useSearchParams();
-const search = searchParams.get("search") || "";
-const category = searchParams.get("category") || "";
-const size = searchParams.get("size") || "";
-const FILTERS_BY_PAGE = {catalogo: ["category", "size"],};
+  const [searchParams] = useSearchParams();
 
-useEffect(() => {
-  setLoading(true);
-
-  getProducts({
-    category,
-    size,
-    search
-  })
-    .then(data => {
-      setProducts(data);
-      setFiltered(data);
-      setError(null);
-    })
-    .catch(err => {
-      console.error(err);
-      setError("No se pudieron cargar los productos");
-    })
-    .finally(() => setLoading(false));
-}, [category, size, search]);
-
+  const search = searchParams.get("search") || "";
+  const category = searchParams.get("category") || "";
+  const size = searchParams.get("size") || "";
+  const priceOrder = searchParams.get("price") || "";
 
   useEffect(() => {
-    if (!search) {
-      setFiltered(products);
-    } else {
-      const text = search.toLowerCase();
+    setLoading(true);
 
-      const result = products.filter(
+    getProducts({
+      category,
+      size,
+      search
+    })
+      .then(data => {
+        setProducts(data);
+        setFiltered(data);
+        setError(null);
+      })
+      .catch(err => {
+        console.error(err);
+        setError("No se pudieron cargar los productos");
+      })
+      .finally(() => setLoading(false));
+  }, [category, size, search]);
+
+  // 🔹 búsqueda + orden por precio
+  useEffect(() => {
+    let result = [...products];
+
+    if (search) {
+      const text = search.toLowerCase();
+      result = result.filter(
         (p) =>
           p.name.toLowerCase().includes(text) ||
           p.description.toLowerCase().includes(text)
       );
-
-      setFiltered(result);
     }
-  }, [search, products]);
+
+    if (priceOrder === "asc") {
+      result.sort((a, b) => a.price - b.price);
+    }
+
+    if (priceOrder === "desc") {
+      result.sort((a, b) => b.price - a.price);
+    }
+
+    setFiltered(result);
+  }, [search, priceOrder, products]);
 
   if (loading) {
     return (
@@ -71,42 +77,12 @@ useEffect(() => {
     );
   }
 
-  if (filtered.length === 0) {
-    return (
-      <div className="container mt-4">
-        <h1 className="mb-3">Catálogo</h1>
-
-        {search && (
-          <p className="text-muted">
-            Resultados para: <strong>{search}</strong>
-          </p>
-        )}
-
-        <p>No se encontraron productos.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="container mt-4">
       <h1 className="mb-3">Catálogo</h1>
-      
-     <FiltersBlock
-  filters={FILTERS_BY_PAGE.catalogo}
-  values={{ category, size }}
-  onChange={(key, value) => {
-    const params = new URLSearchParams(searchParams);
 
-    if (value) {
-      params.set(key, value);
-    } else {
-      params.delete(key);
-    }
-
-    setSearchParams(params);
-  }}
-/>
-
+      {/* ✅ FILTROS SIEMPRE VISIBLES */}
+      <FiltersBlock filters={["category", "size", "price"]} />
 
       {search && (
         <p className="text-muted">
@@ -114,39 +90,42 @@ useEffect(() => {
         </p>
       )}
 
-      <div className="row">
-        {products.map((p) => (
-          <div key={p.id} className="col-md-4 mb-4">
-            <Link
-              to={`/producto/${p.id}`}
-              className="text-decoration-none text-dark"
-            >
-              <div className="card h-100">
+      {/* ✅ MENSAJE SIN CORTAR EL RENDER */}
+      {filtered.length === 0 ? (
+        <p>No se encontraron productos.</p>
+      ) : (
+        <div className="row">
+          {filtered.map((p) => (
+            <div key={p.id} className="col-md-4 mb-4">
+              <Link
+                to={`/producto/${p.id}`}
+                className="text-decoration-none text-dark"
+              >
+                <div className="card h-100">
+                  {p.image && (
+                    <img
+                      src={getImageUrl(p.image)}
+                      alt={p.name}
+                      className="card-img-top"
+                    />
+                  )}
 
-                {p.image && (
-                  <img
-                    src={getImageUrl(p.image)}
-                    alt={p.name}
-                    className="card-img-top"
-                  />
-                )}
-
-                <div className="card-body d-flex flex-column">
-                  <h5 className="card-title">{p.name}</h5>
-                  <p className="card-text flex-grow-1">
-                    {p.description}
-                  </p>
-                  <p className="fw-bold mb-1">${p.price}</p>
-                  <small className="text-muted">
-                    Categoría: {p.category}
-                  </small>
+                  <div className="card-body d-flex flex-column">
+                    <h5 className="card-title">{p.name}</h5>
+                    <p className="card-text flex-grow-1">
+                      {p.description}
+                    </p>
+                    <p className="fw-bold mb-1">${p.price}</p>
+                    <small className="text-muted">
+                      Categoría: {p.category}
+                    </small>
+                  </div>
                 </div>
-
-              </div>
-            </Link>
-          </div>
-        ))}
-      </div>
+              </Link>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
