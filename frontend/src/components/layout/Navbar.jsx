@@ -26,11 +26,11 @@ function Navbar() {
   };
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-light bg-light px-3">
+    <nav className="navbar navbar-expand-lg site-navbar px-3">
 
       {/* LOGO / HOME */}
-      <Link className="navbar-brand fw-bold" to="/">
-        Mi Tienda
+      <Link className="navbar-brand fw-bold text-white" to="/">
+        POLOLO
       </Link>
 
       {/* BOTÓN MENU MÓVIL */}
@@ -93,9 +93,9 @@ function Navbar() {
         </ul>
 
         {/* 🔍 BUSCADOR */}
-        <form className="d-flex me-3" onSubmit={handleSearch}>
+        <form className="d-flex me-3 search-form" onSubmit={handleSearch}>
           <input
-            className="form-control"
+            className="form-control search-input bg-transparent text-white border-light"
             type="search"
             placeholder="Buscar productos..."
             value={search}
@@ -106,7 +106,7 @@ function Navbar() {
           {/* CARRITO + ADMIN */}
       <div className="d-flex align-items-center gap-3">
 
-        <Link to="/carrito" className="btn btn-outline-primary position-relative">
+        <Link to="/carrito" className="btn btn-outline-light position-relative">
           🛒 Carrito
           {totalItems > 0 && (
             <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
@@ -116,19 +116,19 @@ function Navbar() {
         </Link>
 
         {!user && (
-          <Link to="/admin/login" className="btn btn-outline-secondary">
+          <Link to="/admin/login" className="btn btn-outline-light">
             Admin
           </Link>
         )}
 
         {user && (
           <>
-            <Link to="/admin/productos" className="btn btn-outline-dark">
+            <Link to="/admin/productos" className="btn btn-outline-light">
               Panel
             </Link>
 
             <button
-              className="btn btn-outline-danger"
+              className="btn btn-outline-light"
               onClick={handleLogout}
             >
               Salir

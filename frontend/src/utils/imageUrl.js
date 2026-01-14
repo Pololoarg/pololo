@@ -7,6 +7,9 @@ export function getImageUrl(image) {
   // Si es una URL completa (https...), se usa así
   if (image.startsWith("http")) return image;
 
+  // Normalizar: asegurar que la ruta empiece con '/'
+  const path = image.startsWith("/") ? image : `/${image}`;
+
   // Si es un archivo cargado (/uploads/...), lo pegamos al backend
-  return `${BACKEND_BASE_URL}${image}`;
+  return `${BACKEND_BASE_URL}${path}`;
 }

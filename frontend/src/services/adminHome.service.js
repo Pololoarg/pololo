@@ -23,6 +23,11 @@ export const deleteCarouselImage = async (id) => {
   return data;
 };
 
+export const deleteCarouselImageField = async (id, field) => {
+  const { data } = await apiClient.delete(`/admin/home/carousel/${id}`, { params: { field } });
+  return data;
+};
+
 export const toggleCarouselImage = (id, activo) => {
   return apiClient.patch(
     `/admin/home/carousel/${id}/toggle`,

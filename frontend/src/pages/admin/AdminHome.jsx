@@ -6,6 +6,7 @@ import {
   createCarouselImage,
   createHomeProduct,
   deleteCarouselImage,
+  deleteCarouselImageField,
   toggleCarouselImage,
   updateCarouselOrder,
   deleteHomeProduct,
@@ -24,13 +25,16 @@ const AdminHome = () => {
   const [draggedProductItem, setDraggedProductItem] = useState(null);
 
   const [imagePreview, setImagePreview] = useState(null);
+  const [imageMobilePreview, setImageMobilePreview] = useState(null);
   const fileInputRef = useRef(null);
+  const fileMobileInputRef = useRef(null);
 
   // --------------------
   // FORMS
   // --------------------
   const [carouselForm, setCarouselForm] = useState({
     image: null,
+    image_mobile: null,
     titulo: "",
     orden: "",
   });
@@ -77,36 +81,43 @@ const AdminHome = () => {
   // --------------------
   // HANDLERS
   // --------------------
-  const handleDeleteCarouselImage = async (id) => {
-  const confirm = window.confirm("¿Eliminar esta imagen del carrusel?");
-  if (!confirm) return;
+  const handleDeleteCarouselImage = async (id, field = null) => {
+    const confirm = window.confirm(field ? "¿Eliminar esta variante de imagen?" : "¿Eliminar esta imagen del carrusel?");
+    if (!confirm) return;
 
-  try {
-    // Obtener el orden de la imagen a eliminar
-    const deletedItem = carousel.find(item => item.id === id);
-    const deletedOrder = deletedItem?.orden || 0;
+    try {
+      // Obtener el orden de la imagen a eliminar (solo relevante si borraremos la fila completa)
+      const deletedItem = carousel.find(item => item.id === id);
+      const deletedOrder = deletedItem?.orden || 0;
 
-    // Eliminar la imagen
-    await deleteCarouselImage(id);
+      // Si se pasa 'field', sólo borramos ese campo (imagen_url o imagen_mobile_url)
+      if (field) {
+        await deleteCarouselImageField(id, field);
+        loadData();
+        return;
+      }
 
-    // Reorganizar órdenes: todas las imágenes con orden mayor al eliminado
-    const itemsToUpdate = carousel
-      .filter(item => item.id !== id && item.orden > deletedOrder)
-      .map(item => ({
-        ...item,
-        orden: item.orden - 1
-      }));
+      // Eliminar la fila completa
+      await deleteCarouselImage(id);
 
-    // Actualizar órdenes en la BD si hay imágenes que reorganizar
-    if (itemsToUpdate.length > 0) {
-      await updateCarouselOrder(itemsToUpdate);
+      // Reorganizar órdenes: todas las imágenes con orden mayor al eliminado
+      const itemsToUpdate = carousel
+        .filter(item => item.id !== id && item.orden > deletedOrder)
+        .map(item => ({
+          ...item,
+          orden: item.orden - 1
+        }));
+
+      // Actualizar órdenes en la BD si hay imágenes que reorganizar
+      if (itemsToUpdate.length > 0) {
+        await updateCarouselOrder(itemsToUpdate);
+      }
+
+      loadData();
+    } catch (error) {
+      console.error("Error eliminando imagen:", error);
     }
-
-    loadData();
-  } catch (error) {
-    console.error("Error eliminando imagen:", error);
-  }
-};
+  };
 
 const handleToggleCarousel = async (item) => {
   try {
@@ -172,50 +183,50 @@ const handleDrop = async (e, targetItem) => {
   const handleCarouselSubmit = async (e) => {
     e.preventDefault();
 
-    if (!carouselForm.image) {
-      alert("Seleccioná una imagen");
+    // Debe existir al menos una imagen (desktop o mobile)
+    if (!carouselForm.image && !carouselForm.image_mobile) {
+      alert("Seleccioná una imagen para el carrusel o una imagen para móvil");
       return;
     }
 
-    // Validar tamaño mínimo: 10KB
-    if (carouselForm.image.size < 10 * 1024) {
-      alert("La imagen es muy pequeña. Mínimo 10KB");
-      return;
-    }
-
-    // Validar tamaño máximo: 2MB
-    if (carouselForm.image.size > 2 * 1024 * 1024) {
-      alert("La imagen no puede superar los 2MB");
-      return;
-    }
-
-    // Validar formato
+    // Validaciones por archivo (si existen)
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(carouselForm.image.type)) {
-      alert("Formato no permitido. Solo JPG, PNG o WEBP");
-      return;
+
+    if (carouselForm.image) {
+      // Validar tamaño mínimo: 10KB
+      if (carouselForm.image.size < 10 * 1024) {
+        alert("La imagen es muy pequeña. Mínimo 10KB");
+        return;
+      }
+
+      // Validar tamaño máximo: 2MB
+      if (carouselForm.image.size > 2 * 1024 * 1024) {
+        alert("La imagen no puede superar los 2MB");
+        return;
+      }
+
+      if (!validTypes.includes(carouselForm.image.type)) {
+        alert("Formato no permitido para la imagen de escritorio. Solo JPG, PNG o WEBP");
+        return;
+      }
     }
 
-    // Validar dimensiones de la imagen
-    const img = new Image();
-    const imageUrl = URL.createObjectURL(carouselForm.image);
-    
-    img.onload = async () => {
-      URL.revokeObjectURL(imageUrl);
-
-      // Dimensiones mínimas: 
-      if (img.width < 1600 || img.height < 500) {
-        alert(`Imagen muy pequeña. Mínimo 1600x500px. Tu imagen: ${img.width}x${img.height}px`);
+    if (carouselForm.image_mobile) {
+      if (carouselForm.image_mobile.size < 5 * 1024) {
+        alert("La imagen móvil es muy pequeña. Mínimo 5KB");
         return;
       }
-
-      // Dimensiones máximas: 
-      if (img.width > 3000 || img.height > 1200) {
-        alert(`Imagen muy grande. Máximo 3000x1200px. Tu imagen: ${img.width}x${img.height}px`);
+      if (carouselForm.image_mobile.size > 2 * 1024 * 1024) {
+        alert("La imagen móvil no puede superar los 2MB");
         return;
       }
+      if (!validTypes.includes(carouselForm.image_mobile.type)) {
+        alert("Formato no permitido para la imagen móvil. Solo JPG, PNG o WEBP");
+        return;
+      }
+    }
 
-      // Si pasa todas las validaciones, enviar
+    const validateAndSend = async () => {
       try {
         // Calcular orden automáticamente si no se especificó
         let orden = Number(carouselForm.orden);
@@ -228,7 +239,8 @@ const handleDrop = async (e, targetItem) => {
         }
 
         const formData = new FormData();
-        formData.append("image", carouselForm.image);
+        if (carouselForm.image) formData.append("image", carouselForm.image);
+        if (carouselForm.image_mobile) formData.append("image_mobile", carouselForm.image_mobile);
         formData.append("titulo", carouselForm.titulo);
         formData.append("orden", orden);
 
@@ -237,6 +249,7 @@ const handleDrop = async (e, targetItem) => {
         // limpiar estados
         setCarouselForm({
           image: null,
+          image_mobile: null,
           titulo: "",
           orden: "",
         });
@@ -246,15 +259,67 @@ const handleDrop = async (e, targetItem) => {
           URL.revokeObjectURL(imagePreview);
           setImagePreview(null);
         }
+        if (imageMobilePreview) {
+          URL.revokeObjectURL(imageMobilePreview);
+          setImageMobilePreview(null);
+        }
 
         // limpiar input file
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
+        if (fileMobileInputRef.current) {
+          fileMobileInputRef.current.value = "";
+        }
 
         loadData();
       } catch (error) {
         console.error("Error creando carrusel:", error);
+      }
+    };
+
+    // Primero validar la imagen principal
+    const img = new Image();
+    const imageUrl = URL.createObjectURL(carouselForm.image);
+
+    img.onload = () => {
+      URL.revokeObjectURL(imageUrl);
+
+      if (img.width < 1600 || img.height < 500) {
+        alert(`Imagen muy pequeña. Mínimo 1600x500px. Tu imagen: ${img.width}x${img.height}px`);
+        return;
+      }
+
+      if (img.width > 3000 || img.height > 1200) {
+        alert(`Imagen muy grande. Máximo 3000x1200px. Tu imagen: ${img.width}x${img.height}px`);
+        return;
+      }
+
+      // Si hay imagen móvil, validarla también antes de enviar
+      if (carouselForm.image_mobile) {
+        const imgMobile = new Image();
+        const imageMobileUrl = URL.createObjectURL(carouselForm.image_mobile);
+
+        imgMobile.onload = () => {
+          URL.revokeObjectURL(imageMobileUrl);
+
+          if (imgMobile.width < 600 || imgMobile.height < 400) {
+            alert(`Imagen móvil demasiado pequeña. Mínimo 600x400px. Tu imagen: ${imgMobile.width}x${imgMobile.height}px`);
+            return;
+          }
+
+          // todo OK, enviar
+          validateAndSend();
+        };
+
+        imgMobile.onerror = () => {
+          URL.revokeObjectURL(imageMobileUrl);
+          alert("Error al cargar la imagen móvil");
+        };
+
+        imgMobile.src = imageMobileUrl;
+      } else {
+        validateAndSend();
       }
     };
 
@@ -436,6 +501,35 @@ const handleDrop = async (e, targetItem) => {
           </div>
         </div>
 
+          <div className="mb-3">
+            <label className="form-label">Imagen para celular (opcional)</label>
+            <input
+              type="file"
+              accept="image/*"
+              className="form-control"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                if (imageMobilePreview) {
+                  URL.revokeObjectURL(imageMobilePreview);
+                }
+
+                setCarouselForm({
+                  ...carouselForm,
+                  image_mobile: file,
+                });
+
+                setImageMobilePreview(URL.createObjectURL(file));
+              }}
+            />
+            <div className="form-text">
+              <strong>Dimensiones sugeridas para móvil:</strong><br />
+              • Ancho mínimo: 600px | Alto mínimo: 400px<br />
+              • Recomendado: 800×1000 (vertical) o 800×600 (caja móvil)
+            </div>
+          </div>
+
         {imagePreview && (
           <div className="mb-3">
             <p className="mb-2">Preview:</p>
@@ -466,6 +560,32 @@ const handleDrop = async (e, targetItem) => {
           </div>
         )}
 
+          {imageMobilePreview && (
+            <div className="mb-3">
+              <p className="mb-2">Preview móvil:</p>
+              <img
+                src={imageMobilePreview}
+                alt="Preview móvil"
+                className="img-fluid rounded border mb-2"
+                style={{ maxWidth: "200px", maxHeight: "300px", objectFit: "cover" }}
+              />
+              <button
+                type="button"
+                className="btn btn-danger btn-sm"
+                onClick={() => {
+                  URL.revokeObjectURL(imageMobilePreview);
+                  setImageMobilePreview(null);
+                  setCarouselForm({
+                    ...carouselForm,
+                    image_mobile: null,
+                  });
+                }}
+              >
+                Quitar imagen móvil
+              </button>
+            </div>
+          )}
+
         <div className="mb-3">
           <input
             type="number"
@@ -483,9 +603,15 @@ const handleDrop = async (e, targetItem) => {
       </form>
       <h4 className="mt-4 mb-3">Imágenes actuales</h4>
 
+      {/* Apaisadas (desktop/landscape) */}
+      <h5 className="mt-3">Apaisadas</h5>
       <div className="row g-3 mb-4">
-        {carousel.map((item) => (
-          <div key={item.id} className="col-12 col-sm-6 col-lg-4">
+        {carousel.filter(i => i.imagen_url).length === 0 && (
+          <div className="col-12"><div className="alert alert-secondary">No hay imágenes apaisadas.</div></div>
+        )}
+
+        {carousel.filter(i => i.imagen_url).map((item) => (
+          <div key={`land-${item.id}`} className="col-12 col-sm-6 col-lg-4">
             <div
               draggable
               onDragStart={(e) => handleDragStart(e, item)}
@@ -504,11 +630,50 @@ const handleDrop = async (e, targetItem) => {
                 src={`${API_URL}${item.imagen_url}`}
                 alt={item.titulo}
                 className="card-img-top"
-                style={{
-                  height: "150px",
-                  objectFit: "cover",
-                }}
+                style={{ height: "180px", objectFit: "cover" }}
               />
+
+              <div className="card-body">
+                <h6 className="card-title">{item.titulo || "Sin título"}</h6>
+                <p className="card-text text-muted small">Orden: {item.orden}</p>
+                {item.imagen_mobile_url && <div className="mb-2"><small className="text-muted">Tiene versión móvil</small></div>}
+                <div className="d-grid gap-2">
+                  <button
+                    onClick={() => handleToggleCarousel(item)}
+                    className={`btn btn-sm ${item.activo ? "btn-success" : "btn-secondary"}`}
+                  >
+                    {item.activo ? "✓ Activo" : "○ Inactivo"}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteCarouselImage(item.id, 'imagen_url')}
+                    className="btn btn-sm btn-danger"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Móviles (mobile/portrait) */}
+      <h5 className="mt-3">Móviles</h5>
+      <div className="row g-3 mb-5">
+        {carousel.filter(i => i.imagen_mobile_url).length === 0 && (
+          <div className="col-12"><div className="alert alert-secondary">No hay imágenes móviles.</div></div>
+        )}
+
+        {carousel.filter(i => i.imagen_mobile_url).map((item) => (
+          <div key={`mob-${item.id}`} className="col-12 col-sm-6 col-md-4 col-lg-3">
+            <div className="card h-100">
+              <img
+                src={`${API_URL}${item.imagen_mobile_url}`}
+                alt={item.titulo}
+                className="card-img-top"
+                style={{ height: "220px", objectFit: "cover" }}
+              />
+
               <div className="card-body">
                 <h6 className="card-title">{item.titulo || "Sin título"}</h6>
                 <p className="card-text text-muted small">Orden: {item.orden}</p>
@@ -520,7 +685,7 @@ const handleDrop = async (e, targetItem) => {
                     {item.activo ? "✓ Activo" : "○ Inactivo"}
                   </button>
                   <button
-                    onClick={() => handleDeleteCarouselImage(item.id)}
+                    onClick={() => handleDeleteCarouselImage(item.id, 'imagen_mobile_url')}
                     className="btn btn-sm btn-danger"
                   >
                     Eliminar

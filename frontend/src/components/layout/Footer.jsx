@@ -1,15 +1,7 @@
 // src/components/Footer.jsx
 function Footer() {
   return (
-    <footer
-      style={{
-        marginTop: "2rem",
-        padding: "1rem",
-        borderTop: "1px solid #ddd",
-        textAlign: "center",
-        fontSize: "0.9rem",
-      }}
-    >
+    <footer className="site-footer">
       © {new Date().getFullYear()} Indumentaria – Todos los derechos reservados
     </footer>
   );

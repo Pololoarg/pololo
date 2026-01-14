@@ -19,7 +19,8 @@ CREATE TABLE home_products (
 
 CREATE TABLE home_carousel (
   id SERIAL PRIMARY KEY,
-  imagen_url TEXT NOT NULL,
+  imagen_url TEXT,
+  imagen_mobile_url TEXT,
   orden INT DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   titulo VARCHAR(50),

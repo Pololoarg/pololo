@@ -19,7 +19,11 @@ import {
 
 // carrousel images
 router.get('/carousel', verifyToken, authAdmin, getCarouselAdmin);
-router.post('/carousel', verifyToken, authAdmin, uploadCarousel.single('image'), addCarouselImage);
+// aceptar dos archivos: 'image' (desktop) y 'image_mobile' (mobile)
+router.post('/carousel', verifyToken, authAdmin, uploadCarousel.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'image_mobile', maxCount: 1 }
+]), addCarouselImage);
 router.put('/carousel/:id', verifyToken, authAdmin, editCarouselImage);
 router.delete('/carousel/:id', verifyToken, authAdmin, removeCarouselImage);
 router.patch("/carousel/:id/toggle",verifyToken,authAdmin,toggleCarouselImageActive);

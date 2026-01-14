@@ -12,10 +12,12 @@ const Home = () => {
   useEffect(() => {
     const fetchHome = async () => {
       try {
+        console.log('HomePage: llamando a getHome()');
         const data = await getHome();
+        console.log('HomePage: respuesta getHome()', data);
 
-        setCarousel(data.carousel);
-        setFeaturedProducts(data.featuredProducts);
+        setCarousel(data?.carousel || []);
+        setFeaturedProducts(data?.featuredProducts || []);
       } catch (error) {
         console.error("Error cargando home:", error);
       } finally {
@@ -32,8 +34,8 @@ const Home = () => {
 
 
 return (
-  <div>
-    <Carousel images={carousel} />
+    <div>
+    <Carousel images={carousel} fullWidth />
 
     <FeaturedProducts products={featuredProducts} />
   </div>

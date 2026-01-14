@@ -3,7 +3,7 @@ import {pool} from '../config/db.js'; // ajustá la ruta si tu pool está en otr
 // Obtener carrusel activo ordenado (para el frontend público)
 const getActiveCarousel = async () => {
   const { rows } = await pool.query(`
-    SELECT id, imagen_url, titulo, orden
+    SELECT id, imagen_url, imagen_mobile_url, titulo, orden
     FROM home_carousel
     WHERE activo = true
     ORDER BY orden ASC, id ASC
@@ -14,7 +14,7 @@ const getActiveCarousel = async () => {
 // Obtener todo el carrusel para el admin (activos e inactivos)
 const getAllCarousel = async () => {
   const { rows } = await pool.query(`
-    SELECT id, imagen_url, titulo, orden, activo
+    SELECT id, imagen_url, imagen_mobile_url, titulo, orden, activo
     FROM home_carousel
     ORDER BY orden ASC, id ASC
   `);
@@ -22,14 +22,14 @@ const getAllCarousel = async () => {
 };
 
 // Crear imagen de carrusel
-const createCarouselImage = async ({ imagen_url, titulo, orden }) => {
+const createCarouselImage = async ({ imagen_url, imagen_mobile_url, titulo, orden }) => {
   const { rows } = await pool.query(
     `
-    INSERT INTO home_carousel (imagen_url, titulo, orden)
-    VALUES ($1, $2, $3)
+    INSERT INTO home_carousel (imagen_url, imagen_mobile_url, titulo, orden)
+    VALUES ($1, $2, $3, $4)
     RETURNING *
     `,
-    [imagen_url, titulo || null, orden || 0]
+    [imagen_url, imagen_mobile_url || null, titulo || null, orden || 0]
   );
   return rows[0];
 };
@@ -49,19 +49,20 @@ const toggleCarousel = async (id, activo) => {
 };
 
 // Actualizar imagen de carrusel
-const updateCarouselImage = async (id, { imagen_url, titulo, orden, activo }) => {
+const updateCarouselImage = async (id, { imagen_url, imagen_mobile_url, titulo, orden, activo }) => {
   const { rows } = await pool.query(
     `
     UPDATE home_carousel
     SET
       imagen_url = COALESCE($1, imagen_url),
-      titulo     = COALESCE($2, titulo),
-      orden      = COALESCE($3, orden),
-      activo     = COALESCE($4, activo)
-    WHERE id = $5
+      imagen_mobile_url = COALESCE($2, imagen_mobile_url),
+      titulo     = COALESCE($3, titulo),
+      orden      = COALESCE($4, orden),
+      activo     = COALESCE($5, activo)
+    WHERE id = $6
     RETURNING *
     `,
-    [imagen_url, titulo, orden, activo, id]
+    [imagen_url, imagen_mobile_url, titulo, orden, activo, id]
   );
   return rows[0];
 };
@@ -72,11 +73,31 @@ const deleteCarouselImage = async (id) => {
   return true;
 };
 
+// Obtener imagen por id
+const getCarouselById = async (id) => {
+  const { rows } = await pool.query(`SELECT * FROM home_carousel WHERE id = $1`, [id]);
+  return rows[0];
+};
+
+// Limpiar un campo de imagen (imagen_url o imagen_mobile_url) sin eliminar la fila
+const clearCarouselField = async (id, field) => {
+  if (!['imagen_url', 'imagen_mobile_url'].includes(field)) {
+    throw new Error('Campo inválido');
+  }
+
+  const query = `UPDATE home_carousel SET ${field} = NULL WHERE id = $1 RETURNING *`;
+  const { rows } = await pool.query(query, [id]);
+  return rows[0];
+};
+
 export {
   getActiveCarousel,
   getAllCarousel,
   createCarouselImage,
   updateCarouselImage,
   deleteCarouselImage,
-  toggleCarousel
+  toggleCarousel,
+  getCarouselById,
+  clearCarouselField
 };
+*** End Patch

@@ -3,11 +3,16 @@ import {
     getAllCarousel,
     createCarouselImage,
     updateCarouselImage,
-    deleteCarouselImage,
+  deleteCarouselImage,
+  getCarouselById,
+  clearCarouselField,
     toggleCarousel
 } from '../data/homeCarousel.repository.js';
 
 import { pool } from '../config/db.js';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+import path from 'path';
 
 import {
     getHomeProductsAdmin,
@@ -38,19 +43,24 @@ const getCarouselAdmin = async (req, res) => {
 // POST /api/admin/home/carousel
 const addCarouselImage = async (req, res) => {
   try {
-    // multer pone el archivo en req.file
-    if (!req.file) {
+    // ahora esperamos dos archivos posibles: 'image' y 'image_mobile'
+    const files = req.files || {};
+
+    if ((!files.image || files.image.length === 0) && (!files.image_mobile || files.image_mobile.length === 0)) {
       return res.status(400).json({ message: "No se envió ninguna imagen" });
     }
 
     const { titulo, orden } = req.body;
 
-    // ✅ ESTA LÍNEA CLAVE
-    const imagePath = `/uploads/carousel/${req.file.filename}`;
+    const imageFile = files.image && files.image[0];
+    const mobileFile = files.image_mobile && files.image_mobile[0];
 
-    // acá llamás a tu servicio / modelo
+    const imagePath = imageFile ? `/uploads/carousel/${imageFile.filename}` : null;
+    const mobilePath = mobileFile ? `/uploads/carousel/${mobileFile.filename}` : null;
+
     const newImage = await createCarouselImage({
       imagen_url: imagePath,
+      imagen_mobile_url: mobilePath,
       titulo,
       orden,
     });
@@ -79,7 +89,38 @@ const editCarouselImage = async (req, res) => {
 const removeCarouselImage = async (req, res) => {
     try {
         const { id } = req.params;
+        const { field } = req.query; // opcional: imagen_url | imagen_mobile_url
 
+        if (field) {
+          // borrar sólo el campo especificado
+          if (!['imagen_url','imagen_mobile_url'].includes(field)) {
+            return res.status(400).json({ message: 'Campo inválido' });
+          }
+
+          // obtener la fila para borrar el archivo del disco si existe
+          const row = await getCarouselById(id);
+          const filePath = row ? row[field] : null;
+
+          const updated = await clearCarouselField(id, field);
+
+          // borrar archivo físico si existe
+          if (filePath) {
+            try {
+              const __filename = fileURLToPath(import.meta.url);
+              const __dirname = path.dirname(__filename);
+              const absPath = path.join(__dirname, '..', filePath);
+              if (fs.existsSync(absPath)) {
+                fs.unlinkSync(absPath);
+              }
+            } catch (err) {
+              console.warn('No se pudo eliminar archivo físico:', err.message);
+            }
+          }
+
+          return res.status(200).json(updated);
+        }
+
+        // sin campo: eliminar fila completa
         await deleteCarouselImage(id);
         return res.status(204).send();
     } catch (error) {

@@ -50,7 +50,7 @@ const FeaturedProducts = () => {
   if (products.length === 0) return null;
 
   return (
-    <section className="container my-5">
+    <section className="container my-5 featured-products">
       <h3 className="mb-4">Productos destacados</h3>
 
       <Swiper
@@ -71,12 +71,7 @@ const FeaturedProducts = () => {
                 <img
                   src={getImageUrl(product.imagen_url)}
                   alt={product.nombre}
-                  className="card-img-top"
-                  style={{
-                    height: "180px",
-                    objectFit: "cover",
-                    cursor: "pointer"
-                  }}
+                  className="card-img-top product-image"
                   onClick={() => handleViewProduct(product.id)}
                 />
               )}
@@ -92,7 +87,7 @@ const FeaturedProducts = () => {
                 <p className="text-muted mb-3">${product.precio}</p>
 
                 <button 
-                  className="btn btn-success btn-sm"
+                  className="btn btn-success btn-sm featured-add-btn"
                   onClick={() => handleAddToCart(product)}
                   disabled={product.stock <= 0}
                 >
