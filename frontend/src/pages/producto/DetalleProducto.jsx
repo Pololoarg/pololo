@@ -27,12 +27,18 @@ function DetalleProducto() {
   const [error, setError]       = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
   const [quantity, setQuantity] = useState(1);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     (async () => {
       try {
         const data = await getProductById(id);
         setProduct(data);
+        
+        // Seleccionar imagen principal o la primera disponible
+        const images = Array.isArray(data.images) ? data.images : [];
+        const mainImage = images.find(img => img.is_main) || images[0];
+        setSelectedImage(mainImage?.url || data.image);
         
         // Si tiene talles, seleccionar el primero por defecto
         if (data.sizes && data.sizes.items && data.sizes.items.length > 0) {
@@ -85,12 +91,33 @@ function DetalleProducto() {
 
   return (
     <div className="container detalle-container">
-      {/* IMAGEN */}
+      {/* GALERÍA DE IMÁGENES */}
       <div className="detalle-imagen">
-        <img
-          src={getImageUrl(product.image)}
-          alt={product.name}
-        />
+        {/* Imagen principal */}
+        <div className="imagen-principal">
+          <img
+            src={getImageUrl(selectedImage || product.image)}
+            alt={product.name}
+          />
+        </div>
+        
+        {/* Miniaturas */}
+        {product.images && product.images.length > 1 && (
+          <div className="imagenes-thumbnails">
+            {product.images.map((img, idx) => (
+              <div
+                key={img.id || idx}
+                className={`thumbnail ${selectedImage === img.url ? 'active' : ''}`}
+                onClick={() => setSelectedImage(img.url)}
+              >
+                <img
+                  src={getImageUrl(img.url)}
+                  alt={`${product.name} ${idx + 1}`}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* INFORMACIÓN */}

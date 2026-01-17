@@ -9,6 +9,23 @@ CREATE TABLE products (
   activo BOOLEAN DEFAULT TRUE
 );
 
+CREATE TABLE product_images (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL,
+    image_url TEXT NOT NULL,
+    is_main BOOLEAN DEFAULT false,
+
+    CONSTRAINT fk_product_images_product
+        FOREIGN KEY (product_id)
+        REFERENCES products(id)
+        ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX unique_main_image_per_product
+ON product_images (product_id)
+WHERE is_main = true;
+
+
 CREATE TABLE home_products (  
   id SERIAL PRIMARY KEY,
   product_id INT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -80,13 +97,13 @@ SELECT id, '42' FROM size_types WHERE nombre = 'pantalon'
 UNION ALL
 SELECT id, '43' FROM size_types WHERE nombre = 'pantalon'
 UNION ALL
-SELECT id, '44' FROM size_types WHERE nombre = 'pantalon';
+SELECT id, '44' FROM size_types WHERE nombre = 'pantalon'
 UNION ALL
-SELECT id, '45' FROM size_types WHERE nombre = 'pantalon';
+SELECT id, '45' FROM size_types WHERE nombre = 'pantalon'
 UNION ALL
-SELECT id, '46' FROM size_types WHERE nombre = 'pantalon';
+SELECT id, '46' FROM size_types WHERE nombre = 'pantalon'
 UNION ALL
-SELECT id, '47' FROM size_types WHERE nombre = 'pantalon';
+SELECT id, '47' FROM size_types WHERE nombre = 'pantalon'
 UNION ALL
 SELECT id, '48' FROM size_types WHERE nombre = 'pantalon';
 

@@ -5,6 +5,7 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  deleteProductImage,
   searchProducts,
   getSizesByType,
   getProductSizes,
@@ -39,9 +40,10 @@ router.get("/:id/sizes", getProductSizes);
    ADMIN
 ========================= */
 
-router.post("/", verifyToken, upload.single("image"), createProduct);
-router.put("/:id", verifyToken, upload.single("image"), updateProduct);
+router.post("/", verifyToken, upload.array("images", 5), createProduct);
+router.put("/:id", verifyToken, upload.array("images", 5), updateProduct);
 router.put("/:id/sizes", verifyToken, updateProductSizes);
+router.delete("/:id/images/:imageId", verifyToken, deleteProductImage);
 router.delete("/:id", verifyToken, deleteProduct);
 
 export default router;

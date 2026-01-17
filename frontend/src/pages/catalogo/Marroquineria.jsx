@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { getProducts } from "../../services/productsService";
 import { Link, useSearchParams } from "react-router-dom";
 import { getImageUrl } from "../../utils/imageUrl";
@@ -15,7 +15,13 @@ function Marroquineria() {
 
   const [searchParams] = useSearchParams();
   const priceOrder = searchParams.get("price") || "desc"; // 🔹 default desc
-  const activeSubcategory = (searchParams.get("subcategory") || "").toLowerCase();
+  const subcategoryParam = searchParams.get("subcategory") || "";
+  
+  const activeSubcategories = useMemo(() => {
+    return subcategoryParam 
+      ? subcategoryParam.split(",").map(s => s.toLowerCase())
+      : [];
+  }, [subcategoryParam]);
 
   const subcategories = ["bolso", "mochila", "neceser", "riñonera", "billetera"];
 
@@ -38,16 +44,20 @@ function Marroquineria() {
   useEffect(() => {
     let result = [...products];
 
-    // Filtrar por subcategoría si está seleccionada
-    if (activeSubcategory) {
-      result = result.filter(p => (p.subcategory || '').toLowerCase() === activeSubcategory);
+    // Filtrar por subcategorías si hay seleccionadas
+    if (activeSubcategories.length > 0) {
+      result = result.filter(p => activeSubcategories.includes((p.subcategory || '').toLowerCase()));
     }
 
-    // 🔹 siempre mayor a menor
-    result.sort((a, b) => b.price - a.price);
+    // Ordenar por precio
+    if (priceOrder === "asc") {
+      result.sort((a, b) => a.price - b.price);
+    } else {
+      result.sort((a, b) => b.price - a.price);
+    }
 
     setFiltered(result);
-  }, [priceOrder, products, activeSubcategory]);
+  }, [priceOrder, products, activeSubcategories]);
 
   if (loading) {
     return (

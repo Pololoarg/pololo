@@ -130,6 +130,38 @@
   opacity: 1;
 }
 
+/* Botón aplicar filtros */
+.filter-actions {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #ffffff26;
+}
+
+.btn-apply-filters {
+  width: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 10px;
+  padding: 1rem;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-apply-filters:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.btn-apply-filters:active {
+  transform: translateY(0);
+}
+
 /* Scrollbar personalizado */
 .filters-sidebar::-webkit-scrollbar {
   width: 6px;
@@ -150,15 +182,86 @@
   background: rgba(255, 255, 255, 0.3);
 }
 
+/* Botón móvil para mostrar filtros */
+.filters-mobile-toggle {
+  display: none;
+  background: #141414f2;
+  border: 1px solid #ffffff1a;
+  border-radius: 12px;
+  padding: 0.85rem 1.5rem;
+  color: #ffffffd9;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.filters-mobile-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.filters-mobile-toggle svg {
+  stroke: currentColor;
+}
+
+/* Overlay para cerrar filtros en mobile */
+.filters-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 998;
+  backdrop-filter: blur(4px);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
+  .filters-mobile-toggle {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .filters-overlay {
+    display: block;
+  }
+
   .filters-sidebar {
-    position: static;
-    margin-bottom: 1.5rem;
-    max-height: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 85vw;
+    max-width: 320px;
+    max-height: 100vh;
+    z-index: 999;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    border-radius: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
+  .filters-sidebar.open {
+    transform: translateX(0);
   }
 
   .size-options {
     grid-template-columns: repeat(5, 1fr);
+  }
+  
+  .filter-option {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }

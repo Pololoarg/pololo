@@ -121,8 +121,15 @@ export async function createProduct(productData) {
   formData.append('price', productData.price);
   formData.append('active', productData.active);
 
-  if (productData.imageFile) {
-    formData.append('image', productData.imageFile);
+  if (productData.imageFiles && productData.imageFiles.length > 0) {
+    productData.imageFiles.forEach((file) => {
+      formData.append('images', file);
+    });
+    formData.append('mainImageIndex', productData.mainImageIndex ?? 0);
+  } else if (productData.imageFile) {
+    // compatibilidad con el campo anterior
+    formData.append('images', productData.imageFile);
+    formData.append('mainImageIndex', 0);
   }
 
   // Agregar talles si existen
@@ -156,8 +163,21 @@ export async function updateProduct(id, productData) {
   formData.append('price', productData.price);
   formData.append('active', productData.active);
 
-  if (productData.imageFile) {
-    formData.append('image', productData.imageFile);
+  if (productData.imageFiles && productData.imageFiles.length > 0) {
+    productData.imageFiles.forEach((file) => {
+      formData.append('images', file);
+    });
+  } else if (productData.imageFile) {
+    // compatibilidad con el campo anterior
+    formData.append('images', productData.imageFile);
+  }
+
+  if (productData.mainImageId) {
+    formData.append('mainImageId', productData.mainImageId);
+  }
+
+  if (productData.mainImageIndex !== undefined && productData.mainImageIndex !== null) {
+    formData.append('mainImageIndex', productData.mainImageIndex);
   }
 
   const res = await fetch(`${API_URL}/products/${id}`, {
@@ -189,4 +209,20 @@ export async function updateProduct(id, productData) {
   }
 
   return result;
+}
+
+/* ===========================
+   ELIMINAR IMAGEN DE PRODUCTO (ADMIN)
+=========================== */
+export async function deleteProductImage(productId, imageId) {
+  const res = await fetch(`${API_URL}/products/${productId}/images/${imageId}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error('Error al eliminar la imagen');
+  }
+
+  return await res.json();
 }

@@ -14,11 +14,12 @@ function AdminNuevoProducto() {
     description: "",
     price: "",
     active: true,
-    imageFile: null, // archivo real
+    imageFiles: [], // archivos reales (multiple)
+    mainImageIndex: 0,
   });
 
   const [error, setError] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [imagePreviews, setImagePreviews] = useState([]);
   
   // Estados para talles
   const [availableSizes, setAvailableSizes] = useState([]);
@@ -100,64 +101,70 @@ function AdminNuevoProducto() {
     });
   };
 
-  // 👉 cambios en input file (imagen)
+  // 👉 cambios en input file (múltiples imágenes)
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    
-    if (!file) {
-      setForm((prev) => ({ ...prev, imageFile: null }));
-      setImagePreview(null);
+    const files = Array.from(e.target.files || []);
+
+    if (files.length === 0) {
+      setForm((prev) => ({ ...prev, imageFiles: [], mainImageIndex: 0 }));
+      setImagePreviews([]);
       return;
     }
 
-    // Validar tamaño mínimo: 10KB
-    if (file.size < 10 * 1024) {
-      setError("La imagen es muy pequeña. Mínimo 10KB");
-      return;
-    }
-
-    // Validar tamaño máximo: 2MB
-    if (file.size > 2 * 1024 * 1024) {
-      setError("La imagen no puede superar los 2MB");
-      return;
-    }
-
-    // Validar formato
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      setError("Formato no permitido. Solo JPG, PNG o WEBP");
+    const minSize = 10 * 1024; // 10KB
+    const maxSize = 2 * 1024 * 1024; // 2MB
+
+    const accepted = [];
+    const previews = [];
+
+    for (const file of files) {
+      if (file.size < minSize) {
+        setError("La imagen es muy pequeña. Mínimo 10KB");
+        continue;
+      }
+      if (file.size > maxSize) {
+        setError("La imagen no puede superar los 2MB");
+        continue;
+      }
+      if (!validTypes.includes(file.type)) {
+        setError("Formato no permitido. Solo JPG, PNG o WEBP");
+        continue;
+      }
+
+      accepted.push(file);
+      previews.push(URL.createObjectURL(file));
+    }
+
+    if (accepted.length === 0) {
+      setForm((prev) => ({ ...prev, imageFiles: [], mainImageIndex: 0 }));
+      setImagePreviews([]);
       return;
     }
 
-    // Validar dimensiones
-    const img = new Image();
-    const imageUrl = URL.createObjectURL(file);
-    
-    img.onload = () => {
-      URL.revokeObjectURL(imageUrl);
+    setError(null);
+    setForm((prev) => ({ ...prev, imageFiles: accepted, mainImageIndex: 0 }));
+    setImagePreviews(previews);
+  };
 
-      if (img.width < 600 || img.height < 600) {
-        setError(`Imagen muy pequeña. Mínimo 600x600px. Tu imagen: ${img.width}x${img.height}px`);
-        return;
+  const removeImage = (index) => {
+    setForm((prev) => {
+      const nextFiles = prev.imageFiles.filter((_, i) => i !== index);
+      let nextMain = prev.mainImageIndex;
+      if (nextMain === index) {
+        nextMain = 0;
+      } else if (nextMain > index) {
+        nextMain = nextMain - 1;
       }
 
-      if (img.width > 2000 || img.height > 2000) {
-        setError(`Imagen muy grande. Máximo 2000x2000px. Tu imagen: ${img.width}x${img.height}px`);
-        return;
-      }
+      return {
+        ...prev,
+        imageFiles: nextFiles,
+        mainImageIndex: nextFiles.length === 0 ? 0 : Math.min(nextMain, nextFiles.length - 1),
+      };
+    });
 
-      // Validaciones pasadas
-      setError(null);
-      setForm((prev) => ({ ...prev, imageFile: file }));
-      setImagePreview(URL.createObjectURL(file));
-    };
-
-    img.onerror = () => {
-      setError("No se pudo procesar la imagen. Verifica que sea una imagen válida");
-      URL.revokeObjectURL(imageUrl);
-    };
-
-    img.src = imageUrl;
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
@@ -280,42 +287,55 @@ function AdminNuevoProducto() {
           />
         </div>
 
-        {/* IMAGEN */}
+        {/* IMÁGENES */}
         <div className="mb-3">
-          <label className="form-label">Imagen del producto</label>
+          <label className="form-label">Imágenes del producto</label>
           <input
             type="file"
             className="form-control"
             accept="image/*"
+            multiple
             onChange={handleFileChange}
           />
           <div className="form-text">
-            <strong>Dimensiones:</strong><br />
-            • Mínimo: 600×600 px | Máximo: 2000×2000 px<br />
-            • <span className="text-primary">Recomendado: 1200×1200 px</span>
+            • Mínimo: 600×600 px | Máximo: 2000×2000 px (por imagen)<br />
+            • Formatos: JPG, PNG o WEBP<br />
+            • Puedes subir varias y elegir la principal
           </div>
         </div>
 
-        {imagePreview && (
+        {imagePreviews.length > 0 && (
           <div className="mb-3">
-            <p className="mb-2">Preview:</p>
-            <img
-              src={imagePreview}
-              alt="Preview producto"
-              className="img-fluid rounded border mb-2"
-              style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "cover" }}
-            />
-            <button
-              type="button"
-              className="btn btn-danger btn-sm ms-2"
-              onClick={() => {
-                URL.revokeObjectURL(imagePreview);
-                setImagePreview(null);
-                setForm((prev) => ({ ...prev, imageFile: null }));
-              }}
-            >
-              Quitar imagen
-            </button>
+            <p className="mb-2">Selecciona la imagen principal</p>
+            <div className="d-flex flex-wrap gap-3">
+              {imagePreviews.map((preview, idx) => (
+                <div key={idx} className="border rounded p-2" style={{ width: "160px" }}>
+                  <img
+                    src={preview}
+                    alt={`Preview ${idx + 1}`}
+                    className="img-fluid rounded"
+                    style={{ width: "100%", height: "120px", objectFit: "cover" }}
+                  />
+                  <div className="form-check mt-2">
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="mainImage"
+                      checked={form.mainImageIndex === idx}
+                      onChange={() => setForm((prev) => ({ ...prev, mainImageIndex: idx }))}
+                    />
+                    <label className="form-check-label">Principal</label>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-outline-danger btn-sm w-100 mt-2"
+                    onClick={() => removeImage(idx)}
+                  >
+                    Quitar
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

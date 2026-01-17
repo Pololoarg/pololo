@@ -11,14 +11,21 @@ try {
   let query = `
     SELECT DISTINCT
       p.id,
-      p.nombre      AS name,
-      p.categoria   AS category,
+      p.nombre       AS name,
+      p.categoria    AS category,
       p.subcategoria AS subcategory,
-      p.descripcion AS description,
-      p.precio      AS price,
-      p.imagen_url  AS image,
-      p.activo      AS active
+      p.descripcion  AS description,
+      p.precio       AS price,
+      COALESCE(main_img.image_url, p.imagen_url) AS image,
+      p.activo       AS active
     FROM products p
+    LEFT JOIN LATERAL (
+      SELECT image_url
+      FROM product_images pi
+      WHERE pi.product_id = p.id
+      ORDER BY CASE WHEN pi.is_main THEN 0 ELSE 1 END, pi.id
+      LIMIT 1
+    ) AS main_img ON true
   `;
 
   const params = [];
@@ -116,18 +123,40 @@ export const getProductById = async (req, res) => {
       `
       SELECT
         p.id,
-        p.nombre      AS name,
-        p.categoria   AS category,
+        p.nombre       AS name,
+        p.categoria    AS category,
         p.subcategoria AS subcategory,
-        p.descripcion AS description,
-        p.precio      AS price,
-        p.imagen_url  AS image,
-        p.activo      AS active,
-        COALESCE(SUM(ps.stock), 0) AS stock_total
+        p.descripcion  AS description,
+        p.precio       AS price,
+        COALESCE(main_img.image_url, p.imagen_url) AS image,
+        p.activo       AS active,
+        COALESCE(stock.total_stock, 0) AS stock_total,
+        COALESCE(imgs.images, '[]')    AS images
       FROM products p
-      LEFT JOIN product_sizes ps ON ps.product_id = p.id
+      LEFT JOIN LATERAL (
+        SELECT image_url
+        FROM product_images pi
+        WHERE pi.product_id = p.id
+        ORDER BY CASE WHEN pi.is_main THEN 0 ELSE 1 END, pi.id
+        LIMIT 1
+      ) AS main_img ON true
+      LEFT JOIN LATERAL (
+        SELECT json_agg(
+          json_build_object(
+            'id', pi.id,
+            'url', pi.image_url,
+            'is_main', pi.is_main
+          ) ORDER BY pi.is_main DESC, pi.id
+        ) AS images
+        FROM product_images pi
+        WHERE pi.product_id = p.id
+      ) AS imgs ON true
+      LEFT JOIN LATERAL (
+        SELECT COALESCE(SUM(ps.stock), 0) AS total_stock
+        FROM product_sizes ps
+        WHERE ps.product_id = p.id
+      ) AS stock ON true
       WHERE p.id = $1
-      GROUP BY p.id
       `,
       [id]
     );
@@ -168,6 +197,7 @@ export const getProductById = async (req, res) => {
 
     res.json({
       ...product,
+      images: product.images || [],
       sizes
     });
   } catch (error) {
@@ -262,7 +292,15 @@ export const createProduct = async (req, res) => {
   const client = await pool.connect();
 
   try {
-    let { name, category, subcategory, description, price, image, active, sizes } = req.body;
+    let { name, category, subcategory, description, price, image, active, sizes, mainImageIndex } = req.body;
+
+    // Archivos subidos (múltiples imágenes)
+    const uploadedFiles = Array.isArray(req.files) ? req.files : [];
+    const uploadedImages = uploadedFiles.map(file => ({ path: `/uploads/${file.filename}` }));
+    const parsedMainIndex = Number.parseInt(mainImageIndex, 10);
+    const mainIndex = Number.isInteger(parsedMainIndex) && parsedMainIndex >= 0 && parsedMainIndex < uploadedImages.length
+      ? parsedMainIndex
+      : 0;
 
     // Si sizes viene como string JSON, parsearlo
     if (typeof sizes === 'string') {
@@ -276,6 +314,7 @@ export const createProduct = async (req, res) => {
 
     // --- VALIDACIONES BÁSICAS ---
     if (!name || !category || price == null) {
+      client.release();
       return res
         .status(400)
         .json({ message: 'Nombre, categoría y precio son obligatorios' });
@@ -283,6 +322,7 @@ export const createProduct = async (req, res) => {
 
     const priceNumber = Number(price);
     if (Number.isNaN(priceNumber) || priceNumber <= 0) {
+      client.release();
       return res
         .status(400)
         .json({ message: 'El precio debe ser un número mayor a 0' });
@@ -292,8 +332,12 @@ export const createProduct = async (req, res) => {
     const normalizedCategory = String(category).toLowerCase();
 
     if (!allowedCategories.includes(normalizedCategory)) {
+      client.release();
       return res.status(400).json({ message: 'Categoría inválida' });
     }
+
+    // Iniciar transacción
+    await client.query('BEGIN');
 
     // --- VALIDACIONES DE TALLES SEGÚN CATEGORÍA ---
     if (normalizedCategory === 'marroquineria') {
@@ -303,6 +347,8 @@ export const createProduct = async (req, res) => {
           const type = (s.size_type || '').toLowerCase();
           const value = s.size_value || s.size;
           if (type !== 'marroquineria' || value !== 'Único') {
+            await client.query('ROLLBACK');
+            client.release();
             return res
               .status(400)
               .json({ message: 'La marroquinería solo usa talle Único' });
@@ -321,6 +367,7 @@ export const createProduct = async (req, res) => {
           );
           if (sizeCheck.rows.length === 0) {
             await client.query('ROLLBACK');
+            client.release();
             return res
               .status(400)
               .json({ message: 'Talles inválidos para remeras/buzos' });
@@ -339,6 +386,7 @@ export const createProduct = async (req, res) => {
           );
           if (sizeCheck.rows.length === 0) {
             await client.query('ROLLBACK');
+            client.release();
             return res
               .status(400)
               .json({ message: 'Talles inválidos para pantalones' });
@@ -347,10 +395,8 @@ export const createProduct = async (req, res) => {
       }
     }
 
-    await client.query('BEGIN');
-
-    const imagePath = req.file
-      ? `/uploads/${req.file.filename}`
+    const mainImagePath = uploadedImages.length > 0
+      ? uploadedImages[mainIndex]?.path || uploadedImages[0].path
       : (image || '');
 
     const productResult = await client.query(
@@ -359,10 +405,47 @@ export const createProduct = async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, true))
       RETURNING id
       `,
-      [name, normalizedCategory, subcategory || null, description || '', priceNumber, imagePath, active]
+      [name, normalizedCategory, subcategory || null, description || '', priceNumber, mainImagePath, active]
     );
 
     const productId = productResult.rows[0].id;
+
+    if (uploadedImages.length > 0) {
+      for (let i = 0; i < uploadedImages.length; i++) {
+        const img = uploadedImages[i];
+        await client.query(
+          `INSERT INTO product_images (product_id, image_url, is_main)
+           VALUES ($1, $2, $3)`,
+          [productId, img.path, i === mainIndex]
+        );
+      }
+
+      // Asegurar que exista exactamente una imagen principal
+      await client.query(
+        `UPDATE product_images
+         SET is_main = (product_images.id = sub.id)
+         FROM (
+           SELECT id
+           FROM product_images
+           WHERE product_id = $1
+           ORDER BY is_main DESC, id
+           LIMIT 1
+         ) AS sub
+         WHERE product_images.product_id = $1`,
+        [productId]
+      );
+
+      await client.query(
+        `UPDATE products
+         SET imagen_url = (
+           SELECT image_url FROM product_images
+           WHERE product_id = $1 AND is_main = true
+           ORDER BY id LIMIT 1
+         )
+         WHERE id = $1`,
+        [productId]
+      );
+    }
 
     if (Array.isArray(sizes) && sizes.length > 0) {
       for (const s of sizes) {
@@ -403,6 +486,7 @@ export const createProduct = async (req, res) => {
         // Si no se pudo resolver el talle, rechazar para evitar FK nula
         if (!sizeId) {
           await client.query('ROLLBACK');
+          client.release();
           return res.status(400).json({ message: 'No se encontró el talle Único para marroquinería' });
         }
 
@@ -417,24 +501,43 @@ export const createProduct = async (req, res) => {
     }
 
     await client.query('COMMIT');
+    client.release();
     res.status(201).json({ id: productId });
   } catch (error) {
     await client.query('ROLLBACK');
+    client.release();
     console.error('Error al crear producto:', error);
     res.status(500).json({ message: 'Error al crear producto' });
-  } finally {
-    client.release();
   }
 };
 
 
 // ACTUALIZAR PRODUCTO (PUT /api/products/:id)
 export const updateProduct = async (req, res) => {
+  const client = await pool.connect();
   const { id } = req.params;
-  let { name, category, subcategory, description, price, image, active, sizes } = req.body;
+  let { name, category, subcategory, description, price, image, active, sizes, mainImageId, mainImageIndex } = req.body;
+
+  // Si sizes viene como string JSON, parsearlo
+  if (typeof sizes === 'string') {
+    try {
+      sizes = JSON.parse(sizes);
+    } catch (e) {
+      sizes = [];
+    }
+  }
+
+  const uploadedFiles = Array.isArray(req.files) ? req.files : [];
+  const uploadedImages = uploadedFiles.map(file => ({ path: `/uploads/${file.filename}` }));
+  const parsedMainIndex = Number.parseInt(mainImageIndex, 10);
+  const newMainIndex = Number.isInteger(parsedMainIndex) && parsedMainIndex >= 0 && parsedMainIndex < uploadedImages.length
+    ? parsedMainIndex
+    : null;
+  const parsedMainId = mainImageId ? Number(mainImageId) : null;
 
   // --- VALIDACIONES BÁSICAS ---
   if (!name || !category || price == null) {
+    client.release();
     return res
       .status(400)
       .json({ message: 'Nombre, categoría y precio son obligatorios' });
@@ -443,6 +546,7 @@ export const updateProduct = async (req, res) => {
   const priceNumber = Number(price);
 
   if (Number.isNaN(priceNumber) || priceNumber <= 0) {
+    client.release();
     return res
       .status(400)
       .json({ message: 'El precio debe ser un número mayor a 0' });
@@ -452,40 +556,58 @@ export const updateProduct = async (req, res) => {
   const normalizedCategory = String(category).toLowerCase();
 
   if (!allowedCategories.includes(normalizedCategory)) {
+    client.release();
     return res.status(400).json({ message: 'Categoría inválida' });
   }
 
   try {
-    // Primero obtengo la imagen actual
-    const current = await pool.query(
+    await client.query('BEGIN');
+
+    // Obtener datos actuales
+    const current = await client.query(
       'SELECT imagen_url FROM products WHERE id = $1',
       [id]
     );
 
     if (current.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ message: 'Producto no encontrado' });
     }
 
     const currentImage = current.rows[0].imagen_url;
 
+    // Si no hay registros en product_images pero existe imagen actual, crear registro base
+    const imagesCount = await client.query(
+      'SELECT COUNT(*)::int AS count FROM product_images WHERE product_id = $1',
+      [id]
+    );
+    if (imagesCount.rows[0].count === 0 && currentImage) {
+      await client.query(
+        `INSERT INTO product_images (product_id, image_url, is_main)
+         VALUES ($1, $2, true)`,
+        [id, currentImage]
+      );
+    }
+
     // --- VALIDACIONES DE TALLES SEGÚN CATEGORÍA ---
     if (normalizedCategory === 'marroquineria') {
       if (sizes && sizes.length > 0) {
+        await client.query('ROLLBACK');
         return res
           .status(400)
           .json({ message: 'La marroquinería no admite talles' });
       }
     } else if (normalizedCategory === 'remeras' || normalizedCategory === 'buzos') {
       if (sizes && sizes.length > 0) {
-        // Validar que los talles pertenezcan al tipo 'ropa'
         for (const s of sizes) {
-          const sizeCheck = await pool.query(
+          const sizeCheck = await client.query(
             `SELECT s.id FROM sizes s
              JOIN size_types st ON st.id = s.size_type_id
              WHERE s.id = $1 AND LOWER(st.nombre) = 'ropa'`,
             [s.size_id]
           );
           if (sizeCheck.rows.length === 0) {
+            await client.query('ROLLBACK');
             return res
               .status(400)
               .json({ message: 'Talles inválidos para remeras/buzos' });
@@ -494,15 +616,15 @@ export const updateProduct = async (req, res) => {
       }
     } else if (normalizedCategory === 'pantalones') {
       if (sizes && sizes.length > 0) {
-        // Validar que los talles pertenezcan al tipo 'pantalon'
         for (const s of sizes) {
-          const sizeCheck = await pool.query(
+          const sizeCheck = await client.query(
             `SELECT s.id FROM sizes s
              JOIN size_types st ON st.id = s.size_type_id
              WHERE s.id = $1 AND LOWER(st.nombre) = 'pantalon'`,
             [s.size_id]
           );
           if (sizeCheck.rows.length === 0) {
+            await client.query('ROLLBACK');
             return res
               .status(400)
               .json({ message: 'Talles inválidos para pantalones' });
@@ -511,22 +633,18 @@ export const updateProduct = async (req, res) => {
       }
     }
 
-    // 👇 Prioridad: archivo nuevo > image del body > imagen actual
-    const imagePath = req.file
-      ? `/uploads/${req.file.filename}`
-      : (image || currentImage || '');
-
-    const result = await pool.query(
+    // Actualizar producto (imagen_url se sincroniza luego según main)
+    const result = await client.query(
       `
       UPDATE products
       SET
-        nombre      = $1,
-        categoria   = $2,
+        nombre       = $1,
+        categoria    = $2,
         subcategoria = $3,
-        descripcion = $4,
-        precio      = $5,
-        imagen_url  = $6,
-        activo      = $7
+        descripcion  = $4,
+        precio       = $5,
+        imagen_url   = $6,
+        activo       = $7
       WHERE id = $8
       RETURNING 
         id,
@@ -544,32 +662,31 @@ export const updateProduct = async (req, res) => {
         subcategory || null,
         description || '',
         priceNumber,
-        imagePath,
+        image || currentImage || '',
         active ?? true,
         id,
       ]
     );
 
     if (result.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ message: 'Producto no encontrado' });
     }
 
     // Actualizar talles/stock si viene sizes
     if (Array.isArray(sizes)) {
-      await pool.query('DELETE FROM product_sizes WHERE product_id = $1', [id]);
+      await client.query('DELETE FROM product_sizes WHERE product_id = $1', [id]);
 
       for (const s of sizes) {
         let sizeId = s.size_id;
 
-        // Resolver size_id para marroquinería (talle Único)
         if (normalizedCategory === 'marroquineria' && (s.size_type || '').toLowerCase() === 'marroquineria') {
-          // Asegurar size_type marroquineria
           let sizeTypeId;
-          const typeResult = await pool.query(
+          const typeResult = await client.query(
             `SELECT id FROM size_types WHERE LOWER(nombre) = 'marroquineria'`
           );
           if (typeResult.rows.length === 0) {
-            const insertedType = await pool.query(
+            const insertedType = await client.query(
               `INSERT INTO size_types (nombre) VALUES ('marroquineria') RETURNING id`
             );
             sizeTypeId = insertedType.rows[0].id;
@@ -577,12 +694,12 @@ export const updateProduct = async (req, res) => {
             sizeTypeId = typeResult.rows[0].id;
           }
 
-          const sizeResult = await pool.query(
+          const sizeResult = await client.query(
             `SELECT id FROM sizes WHERE size_type_id = $1 AND valor = 'Único'`,
             [sizeTypeId]
           );
           if (sizeResult.rows.length === 0) {
-            const insertedSize = await pool.query(
+            const insertedSize = await client.query(
               `INSERT INTO sizes (size_type_id, valor) VALUES ($1, 'Único') RETURNING id`,
               [sizeTypeId]
             );
@@ -593,10 +710,10 @@ export const updateProduct = async (req, res) => {
         }
 
         if (!sizeId) {
-          continue; // si no hay sizeId válido, salteamos
+          continue;
         }
 
-        await pool.query(
+        await client.query(
           `INSERT INTO product_sizes (product_id, size_id, stock)
            VALUES ($1, $2, $3)`
           , [id, sizeId, s.stock ?? 0]
@@ -604,10 +721,79 @@ export const updateProduct = async (req, res) => {
       }
     }
 
-    res.json(result.rows[0]);
+    // Insertar nuevas imágenes (todas como no-principal inicialmente)
+    const insertedImages = [];
+    for (const img of uploadedImages) {
+      const inserted = await client.query(
+        `INSERT INTO product_images (product_id, image_url, is_main)
+         VALUES ($1, $2, false)
+         RETURNING id, image_url`,
+        [id, img.path]
+      );
+      insertedImages.push(inserted.rows[0]);
+    }
+
+    // Determinar cuál debe ser la imagen principal
+    let targetMainId = null;
+    if (parsedMainId) {
+      targetMainId = parsedMainId;
+    } else if (newMainIndex !== null && insertedImages[newMainIndex]) {
+      targetMainId = insertedImages[newMainIndex].id;
+    }
+
+    if (!targetMainId) {
+      const existingMain = await client.query(
+        `SELECT id FROM product_images WHERE product_id = $1 AND is_main = true ORDER BY id LIMIT 1`,
+        [id]
+      );
+      if (existingMain.rows.length > 0) {
+        targetMainId = existingMain.rows[0].id;
+      }
+    }
+
+    if (!targetMainId) {
+      const anyImage = await client.query(
+        `SELECT id FROM product_images WHERE product_id = $1 ORDER BY id LIMIT 1`,
+        [id]
+      );
+      targetMainId = anyImage.rows[0]?.id || null;
+    }
+
+    if (targetMainId) {
+      await client.query(
+        `UPDATE product_images
+         SET is_main = (id = $2)
+         WHERE product_id = $1`,
+        [id, targetMainId]
+      );
+
+      const mainRow = await client.query(
+        `SELECT image_url FROM product_images WHERE id = $1`,
+        [targetMainId]
+      );
+
+      const mainUrl = mainRow.rows[0]?.image_url || image || currentImage || '';
+
+      await client.query(
+        `UPDATE products SET imagen_url = $1 WHERE id = $2`,
+        [mainUrl, id]
+      );
+    }
+
+    const finalProduct = await client.query(
+      `SELECT id, nombre AS name, categoria AS category, subcategoria AS subcategory, descripcion AS description, precio AS price, imagen_url AS image, activo AS active
+       FROM products WHERE id = $1`,
+      [id]
+    );
+
+    await client.query('COMMIT');
+    res.json(finalProduct.rows[0]);
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Error al actualizar producto:', error);
     res.status(500).json({ message: 'Error al actualizar producto' });
+  } finally {
+    client.release();
   }
 };
 
@@ -700,6 +886,80 @@ export const updateProductSizes = async (req, res) => {
   }
 };
 
+
+// ELIMINAR IMAGEN DE PRODUCTO (DELETE /api/products/:id/images/:imageId)
+export const deleteProductImage = async (req, res) => {
+  const { id, imageId } = req.params;
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // Verificar que la imagen pertenece al producto
+    const imageCheck = await client.query(
+      'SELECT id, is_main FROM product_images WHERE id = $1 AND product_id = $2',
+      [imageId, id]
+    );
+
+    if (imageCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      client.release();
+      return res.status(404).json({ message: 'Imagen no encontrada' });
+    }
+
+    const wasMain = imageCheck.rows[0].is_main;
+
+    // Eliminar la imagen
+    await client.query(
+      'DELETE FROM product_images WHERE id = $1',
+      [imageId]
+    );
+
+    // Si era la imagen principal, asignar otra como principal
+    if (wasMain) {
+      const newMain = await client.query(
+        `SELECT id FROM product_images
+         WHERE product_id = $1
+         ORDER BY id
+         LIMIT 1`,
+        [id]
+      );
+
+      if (newMain.rows.length > 0) {
+        await client.query(
+          'UPDATE product_images SET is_main = true WHERE id = $1',
+          [newMain.rows[0].id]
+        );
+
+        // Actualizar products.imagen_url
+        const newMainUrl = await client.query(
+          'SELECT image_url FROM product_images WHERE id = $1',
+          [newMain.rows[0].id]
+        );
+
+        await client.query(
+          'UPDATE products SET imagen_url = $1 WHERE id = $2',
+          [newMainUrl.rows[0].image_url, id]
+        );
+      } else {
+        // No quedan imágenes, limpiar products.imagen_url
+        await client.query(
+          'UPDATE products SET imagen_url = NULL WHERE id = $1',
+          [id]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+    client.release();
+    res.json({ message: 'Imagen eliminada correctamente' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    client.release();
+    console.error('Error al eliminar imagen:', error);
+    res.status(500).json({ message: 'Error al eliminar imagen' });
+  }
+};
 
 // ELIMINAR PRODUCTO (DELETE /api/products/:id)
 export const deleteProduct = async (req, res) => {

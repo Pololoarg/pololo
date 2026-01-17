@@ -1,7 +1,7 @@
 // src/pages/admin/AdminEditarProducto.jsx
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { getProductById, updateProduct } from "../../services/productsService";
+import { getProductById, updateProduct, deleteProductImage } from "../../services/productsService";
 import { apiClient } from "../../services/apiClient";
 import { getImageUrl } from "../../utils/imageUrl";
 
@@ -15,9 +15,8 @@ function AdminEditarProducto() {
     subcategory: "",
     description: "",
     price: "",
-    image: "",      // URL actual (si viene de la BD)
+    image: "",      // URL actual (principal)
     active: true,
-    imageFile: null // archivo nuevo (opcional)
   });
 
   const [loading, setLoading] = useState(true);
@@ -29,6 +28,10 @@ function AdminEditarProducto() {
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [marroquineriaSubcategories, setMarroquineriaSubcategories] = useState([]);
   const [marroquineriaStock, setMarroquineriaStock] = useState(0);
+  const [existingImages, setExistingImages] = useState([]);
+  const [newImageFiles, setNewImageFiles] = useState([]);
+  const [newImagePreviews, setNewImagePreviews] = useState([]);
+  const [mainSelection, setMainSelection] = useState({ type: 'existing', id: null, index: null });
   const ORDER_ROPA = ["XS", "S", "M", "L", "XL"];
 
 
@@ -44,8 +47,15 @@ function AdminEditarProducto() {
           price: data.price ?? "",
           image: data.image || "",
           active: data.active ?? true,
-          imageFile: null,
         });
+
+        const apiImages = Array.isArray(data.images) ? data.images : [];
+        setExistingImages(apiImages);
+
+        const mainExisting = apiImages.find((img) => img.is_main) || apiImages[0];
+        if (mainExisting) {
+          setMainSelection({ type: 'existing', id: mainExisting.id, index: null });
+        }
 
         // Cargar talles actuales del producto
         if (data.sizes && data.sizes.items) {
@@ -146,13 +156,102 @@ function AdminEditarProducto() {
     });
   };
 
-  // 👉 archivo de imagen nuevo
+  // 👉 nuevas imágenes (múltiples)
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setForm((prev) => ({
-      ...prev,
-      imageFile: file || null,
-    }));
+    const files = Array.from(e.target.files || []);
+
+    if (files.length === 0) {
+      setNewImageFiles([]);
+      setNewImagePreviews([]);
+      return;
+    }
+
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const minSize = 10 * 1024;
+    const maxSize = 2 * 1024 * 1024;
+
+    const accepted = [];
+    const previews = [];
+
+    for (const file of files) {
+      if (file.size < minSize) {
+        setError("La imagen es muy pequeña. Mínimo 10KB");
+        continue;
+      }
+      if (file.size > maxSize) {
+        setError("La imagen no puede superar los 2MB");
+        continue;
+      }
+      if (!validTypes.includes(file.type)) {
+        setError("Formato no permitido. Solo JPG, PNG o WEBP");
+        continue;
+      }
+
+      accepted.push(file);
+      previews.push(URL.createObjectURL(file));
+    }
+
+    if (accepted.length === 0) {
+      setNewImageFiles([]);
+      setNewImagePreviews([]);
+      return;
+    }
+
+    setError(null);
+    setNewImageFiles(accepted);
+    setNewImagePreviews(previews);
+
+    // Si no hay selección principal actual, seleccionar la primera nueva
+    if (!mainSelection.id && mainSelection.type !== 'new') {
+      setMainSelection({ type: 'new', id: null, index: 0 });
+    }
+  };
+
+  const removeNewImage = (index) => {
+    setNewImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setNewImagePreviews((prev) => prev.filter((_, i) => i !== index));
+
+    setMainSelection((prev) => {
+      if (prev.type !== 'new') return prev;
+      if (prev.index === index) {
+        return { type: 'existing', id: prev.id, index: null };
+      }
+      if (prev.index !== null && prev.index > index) {
+        return { ...prev, index: prev.index - 1 };
+      }
+      return prev;
+    });
+  };
+
+  const deleteExistingImage = async (imageId) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar esta imagen?')) {
+      return;
+    }
+
+    try {
+      await deleteProductImage(id, imageId);
+      
+      // Actualizar el estado local
+      const remainingImages = existingImages.filter(img => img.id !== imageId);
+      setExistingImages(remainingImages);
+
+      // Si eliminamos la imagen seleccionada como main, ajustar la selección
+      if (mainSelection.type === 'existing' && mainSelection.id === imageId) {
+        if (remainingImages.length > 0) {
+          // Buscar la nueva imagen principal o seleccionar la primera
+          const newMain = remainingImages.find(img => img.is_main) || remainingImages[0];
+          setMainSelection({ type: 'existing', id: newMain.id, index: null });
+        } else if (newImageFiles.length > 0) {
+          // Si no quedan imágenes existentes pero hay nuevas, seleccionar la primera nueva
+          setMainSelection({ type: 'new', id: null, index: 0 });
+        } else {
+          setMainSelection({ type: null, id: null, index: null });
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error al eliminar la imagen');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -183,6 +282,9 @@ function AdminEditarProducto() {
         ...form,
         price: parseFloat(form.price),
         sizes: sizes,
+        imageFiles: newImageFiles,
+        mainImageId: mainSelection.type === 'existing' ? mainSelection.id : null,
+        mainImageIndex: mainSelection.type === 'new' ? mainSelection.index : null,
       });
 
       navigate("/admin/productos");
@@ -294,29 +396,102 @@ function AdminEditarProducto() {
           />
         </div>
 
-        {/* IMAGEN ACTUAL + CAMBIAR IMAGEN */}
-        <div className="mb-3">
-          <label className="form-label">Imagen actual</label>
-          {form.image ? (
-            <div className="mb-2">
-              <img
-                src={getImageUrl(form.image)}
-                alt={form.name}
-                className="admin-product-preview"
-              />
+        {/* IMÁGENES ACTUALES */}
+        {existingImages.length > 0 && (
+          <div className="mb-3">
+            <label className="form-label">Imágenes actuales</label>
+            <div className="d-flex flex-wrap gap-3">
+              {existingImages.map((img) => (
+                <div key={img.id} className="border rounded p-2" style={{ width: "160px", position: "relative" }}>
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-sm"
+                    style={{
+                      position: "absolute",
+                      top: "5px",
+                      right: "5px",
+                      padding: "2px 6px",
+                      fontSize: "12px",
+                      borderRadius: "50%",
+                      zIndex: 1
+                    }}
+                    onClick={() => deleteExistingImage(img.id)}
+                    title="Eliminar imagen"
+                  >
+                    ×
+                  </button>
+                  <img
+                    src={getImageUrl(img.url)}
+                    alt={form.name}
+                    className="img-fluid rounded"
+                    style={{ width: "100%", height: "120px", objectFit: "cover" }}
+                  />
+                  <div className="form-check mt-2">
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="mainImage"
+                      checked={mainSelection.type === 'existing' && mainSelection.id === img.id}
+                      onChange={() => setMainSelection({ type: 'existing', id: img.id, index: null })}
+                    />
+                    <label className="form-check-label">Principal</label>
+                  </div>
+                </div>
+              ))}
             </div>
-          ) : (
-            <p className="text-muted">Este producto no tiene imagen.</p>
-          )}
+          </div>
+        )}
 
-          <label className="form-label">Cambiar imagen</label>
+        {/* NUEVAS IMÁGENES */}
+        <div className="mb-3">
+          <label className="form-label">Agregar nuevas imágenes</label>
           <input
             type="file"
             className="form-control"
             accept="image/*"
+            multiple
             onChange={handleFileChange}
           />
+          <div className="form-text">
+            • Puedes subir varias imágenes nuevas y elegir la principal<br />
+            • Formatos: JPG, PNG o WEBP | Máx: 2MB cada una
+          </div>
         </div>
+
+        {newImagePreviews.length > 0 && (
+          <div className="mb-3">
+            <p className="mb-2">Nuevas imágenes (elige la principal si corresponde)</p>
+            <div className="d-flex flex-wrap gap-3">
+              {newImagePreviews.map((preview, idx) => (
+                <div key={idx} className="border rounded p-2" style={{ width: "160px" }}>
+                  <img
+                    src={preview}
+                    alt={`Nueva ${idx + 1}`}
+                    className="img-fluid rounded"
+                    style={{ width: "100%", height: "120px", objectFit: "cover" }}
+                  />
+                  <div className="form-check mt-2">
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="mainImage"
+                      checked={mainSelection.type === 'new' && mainSelection.index === idx}
+                      onChange={() => setMainSelection({ type: 'new', id: null, index: idx })}
+                    />
+                    <label className="form-check-label">Principal</label>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-outline-danger btn-sm w-100 mt-2"
+                    onClick={() => removeNewImage(idx)}
+                  >
+                    Quitar
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
        {/* STOCK PARA MARROQUINERÍA */}
         {form.category === 'marroquineria' && (
