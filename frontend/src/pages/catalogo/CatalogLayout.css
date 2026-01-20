@@ -3,6 +3,7 @@
   grid-template-columns: 280px 1fr;
   gap: 2rem;
   margin-top: 2rem;
+  align-items: start;
 }
 
 .catalog-header {
@@ -60,7 +61,7 @@
 .product-name {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #ffffffd9;
+  color: #ececec;
   margin-bottom: 0.5rem;
   line-height: 1.4;
 }
@@ -82,13 +83,13 @@
   justify-content: space-between;
   align-items: center;
   padding-top: 0.75rem;
-  border-top: 1px solid #ffffffd9;
+  border-top: 1px solid #ececec;
 }
 
 .product-price {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #ffffffd9;
+  color: #ececec;
 }
 
 .product-category {
@@ -96,7 +97,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #555;
-  background: #ffffffd9;
+  background: #ececec;
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
 }

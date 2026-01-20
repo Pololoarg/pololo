@@ -4,10 +4,12 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { getProductById, updateProduct, deleteProductImage } from "../../services/productsService";
 import { apiClient } from "../../services/apiClient";
 import { getImageUrl } from "../../utils/imageUrl";
+import { useToast } from "../../context/ToastContext.jsx";
 
 function AdminEditarProducto() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [form, setForm] = useState({
     name: "",
@@ -161,8 +163,6 @@ function AdminEditarProducto() {
     const files = Array.from(e.target.files || []);
 
     if (files.length === 0) {
-      setNewImageFiles([]);
-      setNewImagePreviews([]);
       return;
     }
 
@@ -170,36 +170,29 @@ function AdminEditarProducto() {
     const minSize = 10 * 1024;
     const maxSize = 2 * 1024 * 1024;
 
-    const accepted = [];
-    const previews = [];
+    const file = files[0]; // Solo procesar la primera imagen seleccionada
 
-    for (const file of files) {
-      if (file.size < minSize) {
-        setError("La imagen es muy pequeña. Mínimo 10KB");
-        continue;
-      }
-      if (file.size > maxSize) {
-        setError("La imagen no puede superar los 2MB");
-        continue;
-      }
-      if (!validTypes.includes(file.type)) {
-        setError("Formato no permitido. Solo JPG, PNG o WEBP");
-        continue;
-      }
-
-      accepted.push(file);
-      previews.push(URL.createObjectURL(file));
+    if (file.size < minSize) {
+      setError("La imagen es muy pequeña. Mínimo 10KB");
+      e.target.value = ''; // Limpiar el input
+      return;
     }
-
-    if (accepted.length === 0) {
-      setNewImageFiles([]);
-      setNewImagePreviews([]);
+    if (file.size > maxSize) {
+      setError("La imagen no puede superar los 2MB");
+      e.target.value = ''; // Limpiar el input
+      return;
+    }
+    if (!validTypes.includes(file.type)) {
+      setError("Formato no permitido. Solo JPG, PNG o WEBP");
+      e.target.value = ''; // Limpiar el input
       return;
     }
 
     setError(null);
-    setNewImageFiles(accepted);
-    setNewImagePreviews(previews);
+    // Agregar la nueva imagen a las existentes
+    setNewImageFiles((prev) => [...prev, file]);
+    setNewImagePreviews((prev) => [...prev, URL.createObjectURL(file)]);
+    e.target.value = ''; // Limpiar el input para poder agregar más
 
     // Si no hay selección principal actual, seleccionar la primera nueva
     if (!mainSelection.id && mainSelection.type !== 'new') {
@@ -250,7 +243,7 @@ function AdminEditarProducto() {
       }
     } catch (err) {
       console.error(err);
-      alert('Error al eliminar la imagen');
+      showToast('Error al eliminar la imagen', 'error');
     }
   };
 
@@ -449,11 +442,10 @@ function AdminEditarProducto() {
             type="file"
             className="form-control"
             accept="image/*"
-            multiple
             onChange={handleFileChange}
           />
           <div className="form-text">
-            • Puedes subir varias imágenes nuevas y elegir la principal<br />
+            • Selecciona una imagen a la vez y haz clic en "Seleccionar archivo" para agregar más<br />
             • Formatos: JPG, PNG o WEBP | Máx: 2MB cada una
           </div>
         </div>

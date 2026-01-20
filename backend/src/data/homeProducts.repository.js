@@ -11,7 +11,25 @@ const getActiveHomeProducts = async () => {
     WHERE hp.activo = true
     ORDER BY hp.orden ASC, hp.id ASC
   `);
-  return rows;
+  
+  // Obtener imágenes para cada producto
+  const productsWithImages = await Promise.all(
+    rows.map(async (product) => {
+      const imagesResult = await pool.query(
+        `SELECT id, image_url as url, is_main 
+         FROM product_images 
+         WHERE product_id = $1 
+         ORDER BY CASE WHEN is_main THEN 0 ELSE 1 END, id`,
+        [product.id]
+      );
+      return {
+        ...product,
+        images: imagesResult.rows
+      };
+    })
+  );
+  
+  return productsWithImages;
 };
 
 export const getHomeProductsAdmin = async () => {

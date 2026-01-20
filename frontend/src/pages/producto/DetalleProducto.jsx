@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { getProductById } from "../../services/productsService";
 import { useCart } from "../../context/CartContext";
 import { formatPrice } from "../../utils/formatPrice";
+import { useToast } from "../../context/ToastContext.jsx";
 import "./DetalleProducto.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
@@ -22,6 +23,7 @@ const getImageUrl = (image) => {
 function DetalleProducto() {
   const { id } = useParams(); // lee el id de la URL
   const { addToCart } = useCart();
+  const { showToast } = useToast();
   const [product, setProduct] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
@@ -57,18 +59,18 @@ function DetalleProducto() {
     // Validar si el producto tiene talles
     if (product.sizes && product.sizes.items && product.sizes.items.length > 0) {
       if (!selectedSize) {
-        alert("❌ Por favor, selecciona un talle");
+        showToast("Por favor, selecciona un talle", "error");
         return;
       }
       if (selectedSize.stock < quantity) {
-        alert(`❌ Stock insuficiente. Disponible: ${selectedSize.stock} unidades`);
+        showToast(`Stock insuficiente. Disponible: ${selectedSize.stock} unidades`, "error");
         return;
       }
     } else {
       // Si no tiene talles, validar el stock total
       const stockDisponible = product.stock_total || product.stock || 0;
       if (stockDisponible < quantity) {
-        alert(`❌ Stock insuficiente. Disponible: ${stockDisponible} unidades`);
+        showToast(`Stock insuficiente. Disponible: ${stockDisponible} unidades`, "error");
         return;
       }
     }
@@ -81,7 +83,7 @@ function DetalleProducto() {
     });
     
     if (success) {
-      alert("✅ Producto agregado al carrito");
+      showToast("Producto agregado al carrito", "success");
     }
   };
 
@@ -126,7 +128,9 @@ function DetalleProducto() {
         <p className="detalle-categoria">{product.category}</p>
         <div className="detalle-precio">${formatPrice(product.price)}</div>
 
-        <p className="detalle-descripcion">{product.description}</p>
+        {product.description && product.description.trim() && (
+          <p className="detalle-descripcion">{product.description}</p>
+        )}
 
         {/* TALLES */}
         {product.sizes && product.sizes.items && product.sizes.items.length > 0 && (

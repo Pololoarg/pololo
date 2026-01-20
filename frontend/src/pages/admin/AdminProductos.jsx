@@ -3,9 +3,11 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAllProductsAdmin, deleteProduct } from "../../services/productsService";
 import { getImageUrl } from "../../utils/imageUrl";
+import { useToast } from "../../context/ToastContext.jsx";
 
 
 function AdminProductos() {
+  const { showToast } = useToast();
   const [products, setProducts] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
@@ -35,9 +37,10 @@ function AdminProductos() {
     try {
       await deleteProduct(id);
       setProducts((prev) => prev.filter((p) => p.id !== id));
+      showToast("Producto eliminado", "success");
     } catch (err) {
       console.error(err);
-      alert("Hubo un error al eliminar el producto");
+      showToast("Hubo un error al eliminar el producto", "error");
     }
   };
 

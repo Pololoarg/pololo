@@ -13,6 +13,7 @@ import { formatPrice } from "../utils/formatPrice";
 
 const FeaturedProducts = () => {
   const [products, setProducts] = useState([]);
+  const [hoveredProduct, setHoveredProduct] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,12 +45,22 @@ const FeaturedProducts = () => {
           992: { slidesPerView: 4 },
         }}
       >
-        {products.map((product) => (
+        {products.map((product) => {
+          const secondImage = product.images && product.images.length > 1 ? product.images[1].url : null;
+          const isHovered = hoveredProduct === product.home_product_id;
+          const displayImage = isHovered && secondImage ? secondImage : product.imagen_url;
+          
+          return (
           <SwiperSlide key={product.home_product_id}>
-            <div className="product-card" style={{ cursor: 'pointer' }}>
-              {product.imagen_url && (
+            <div 
+              className="product-card" 
+              style={{ cursor: 'pointer' }}
+              onMouseEnter={() => setHoveredProduct(product.home_product_id)}
+              onMouseLeave={() => setHoveredProduct(null)}
+            >
+              {displayImage && (
                 <img
-                  src={getImageUrl(product.imagen_url)}
+                  src={getImageUrl(displayImage)}
                   alt={product.nombre}
                   className="catalog-product-image"
                   onClick={() => handleViewProduct(product.id)}
@@ -77,7 +88,8 @@ const FeaturedProducts = () => {
               </div>
             </div>
           </SwiperSlide>
-        ))}
+          );
+        })}
       </Swiper>
     </section>
   );

@@ -4,33 +4,30 @@
   border-radius: 20px;
   padding: 1.75rem;
   box-shadow: 0 4px 16px #0000004d;
-  position: sticky;
-  top: 80px;
-  max-height: calc(100vh - 100px);
-  overflow-y: auto;
-  overflow-x: hidden;
+  height: fit-content;
   backdrop-filter: blur(10px);
+  overflow: visible;
 }
 
 .filters-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.75rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #ffffff26;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #ececec;
 }
 
 .filters-title {
   font-size: 1.2rem;
   font-weight: 700;
   margin: 0;
-  color: #ffffffd9;
+  color: #ececec;
   letter-spacing: -0.5px;
 }
 
 .filter-section {
-  margin-bottom: 2.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .filter-section:last-child {
@@ -42,7 +39,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.2px;
-  color: #ffffff99;
+  color: #ececec;
   margin-bottom: 1rem;
 }
 
@@ -53,13 +50,13 @@
 }
 
 .filter-option {
-  background: #ffffff0d;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #ececec;
+  border: 1px solid #ececec;
   border-radius: 8px;
   padding: 0.85rem 1.1rem;
   font-size: 0.95rem;
   font-weight: 500;
-  color: #ffffffd9;
+  color: #141414f2;
   text-align: left;
   transition: all 0.25s ease;
   cursor: pointer;
@@ -77,7 +74,7 @@
   top: 0;
   height: 100%;
   width: 0;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1), transparent);
+  background: linear-gradient(90deg, #ffffff1a, transparent);
   transition: width 0.3s ease;
 }
 
@@ -132,9 +129,9 @@
 
 /* Botón aplicar filtros */
 .filter-actions {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #ffffff26;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #ececec;
 }
 
 .btn-apply-filters {
@@ -162,25 +159,7 @@
   transform: translateY(0);
 }
 
-/* Scrollbar personalizado */
-.filters-sidebar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.filters-sidebar::-webkit-scrollbar-track {
-  background: #ffffff0d;
-  margin: 20px;
-  border-radius: 10px;
-}
-
-.filters-sidebar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-}
-
-.filters-sidebar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
+/* Scrollbar personalizado - no se usa */
 
 /* Botón móvil para mostrar filtros */
 .filters-mobile-toggle {
@@ -189,7 +168,7 @@
   border: 1px solid #ffffff1a;
   border-radius: 12px;
   padding: 0.85rem 1.5rem;
-  color: #ffffffd9;
+  color: #ececec;
   font-weight: 600;
   font-size: 0.95rem;
   margin-bottom: 1rem;

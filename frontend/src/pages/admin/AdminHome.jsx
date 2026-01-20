@@ -14,10 +14,12 @@ import {
 } from "../../services/adminHome.service";
 
 import { searchProductsAdmin } from "../../services/productsService";
+import { useToast } from "../../context/ToastContext.jsx";
 
 const API_URL = "http://localhost:4000";
 
 const AdminHome = () => {
+  const { showToast } = useToast();
   const [carousel, setCarousel] = useState([]);
   const [homeProducts, setHomeProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -185,7 +187,7 @@ const handleDrop = async (e, targetItem) => {
 
     // Debe existir al menos una imagen (desktop o mobile)
     if (!carouselForm.image && !carouselForm.image_mobile) {
-      alert("Seleccioná una imagen para el carrusel o una imagen para móvil");
+      showToast("Seleccioná una imagen para el carrusel o una imagen para móvil", "error");
       return;
     }
 
@@ -195,33 +197,33 @@ const handleDrop = async (e, targetItem) => {
     if (carouselForm.image) {
       // Validar tamaño mínimo: 10KB
       if (carouselForm.image.size < 10 * 1024) {
-        alert("La imagen es muy pequeña. Mínimo 10KB");
+        showToast("La imagen es muy pequeña. Mínimo 10KB", "error");
         return;
       }
 
       // Validar tamaño máximo: 2MB
       if (carouselForm.image.size > 2 * 1024 * 1024) {
-        alert("La imagen no puede superar los 2MB");
+        showToast("La imagen no puede superar los 2MB", "error");
         return;
       }
 
       if (!validTypes.includes(carouselForm.image.type)) {
-        alert("Formato no permitido para la imagen de escritorio. Solo JPG, PNG o WEBP");
+        showToast("Formato no permitido para la imagen de escritorio. Solo JPG, PNG o WEBP", "error");
         return;
       }
     }
 
     if (carouselForm.image_mobile) {
       if (carouselForm.image_mobile.size < 5 * 1024) {
-        alert("La imagen móvil es muy pequeña. Mínimo 5KB");
+        showToast("La imagen móvil es muy pequeña. Mínimo 5KB", "error");
         return;
       }
       if (carouselForm.image_mobile.size > 2 * 1024 * 1024) {
-        alert("La imagen móvil no puede superar los 2MB");
+        showToast("La imagen móvil no puede superar los 2MB", "error");
         return;
       }
       if (!validTypes.includes(carouselForm.image_mobile.type)) {
-        alert("Formato no permitido para la imagen móvil. Solo JPG, PNG o WEBP");
+        showToast("Formato no permitido para la imagen móvil. Solo JPG, PNG o WEBP", "error");
         return;
       }
     }
@@ -286,12 +288,12 @@ const handleDrop = async (e, targetItem) => {
       URL.revokeObjectURL(imageUrl);
 
       if (img.width < 1600 || img.height < 500) {
-        alert(`Imagen muy pequeña. Mínimo 1600x500px. Tu imagen: ${img.width}x${img.height}px`);
+        showToast(`Imagen muy pequeña. Mínimo 1600x500px. Tu imagen: ${img.width}x${img.height}px`, "error");
         return;
       }
 
       if (img.width > 3000 || img.height > 1200) {
-        alert(`Imagen muy grande. Máximo 3000x1200px. Tu imagen: ${img.width}x${img.height}px`);
+        showToast(`Imagen muy grande. Máximo 3000x1200px. Tu imagen: ${img.width}x${img.height}px`, "error");
         return;
       }
 
@@ -304,7 +306,7 @@ const handleDrop = async (e, targetItem) => {
           URL.revokeObjectURL(imageMobileUrl);
 
           if (imgMobile.width < 600 || imgMobile.height < 400) {
-            alert(`Imagen móvil demasiado pequeña. Mínimo 600x400px. Tu imagen: ${imgMobile.width}x${imgMobile.height}px`);
+            showToast(`Imagen móvil demasiado pequeña. Mínimo 600x400px. Tu imagen: ${imgMobile.width}x${imgMobile.height}px`, "error");
             return;
           }
 
@@ -314,7 +316,7 @@ const handleDrop = async (e, targetItem) => {
 
         imgMobile.onerror = () => {
           URL.revokeObjectURL(imageMobileUrl);
-          alert("Error al cargar la imagen móvil");
+          showToast("Error al cargar la imagen móvil", "error");
         };
 
         imgMobile.src = imageMobileUrl;
@@ -325,7 +327,7 @@ const handleDrop = async (e, targetItem) => {
 
     img.onerror = () => {
       URL.revokeObjectURL(imageUrl);
-      alert("Error al cargar la imagen");
+      showToast("Error al cargar la imagen", "error");
     };
 
     img.src = imageUrl;
@@ -420,7 +422,7 @@ const handleDrop = async (e, targetItem) => {
     e.preventDefault();
 
     if (!productForm.product_id) {
-      alert("Seleccioná un producto");
+      showToast("Seleccioná un producto", "error");
       return;
     }
 

@@ -7,7 +7,7 @@ function Footer() {
         <div className="footer-top">
           <div className="footer-logo">
             <img
-              src="/logo.png"
+              src="/logo-transp.png"
               alt="POLOLO ARG"
             />
           </div>

@@ -1,5 +1,6 @@
 // src/context/CartContext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
+import { useToast } from "./ToastContext.jsx";
 
 const CartContext = createContext();
 
@@ -9,6 +10,7 @@ export function useCart() {
 }
 
 export function CartProvider({ children }) {
+  const { showToast } = useToast();
   const [cart, setCart] = useState(() => {
     try {
       const stored = localStorage.getItem("cart");
@@ -32,34 +34,35 @@ export function CartProvider({ children }) {
     // Validar stock disponible
     const stockDisponible = product.stock || 0;
     if (stockDisponible <= 0) {
-      alert("❌ Producto sin stock disponible");
+      showToast("Producto sin stock disponible", "error");
       return false;
     }
 
-    setCart((prev) => {
-      // Buscar producto con el MISMO ID Y TALLE (si tiene)
-      const existing = prev.find(
-        (item) => item.id === product.id && item.selectedSize === product.selectedSize
-      );
+    // Buscar producto con el MISMO ID Y TALLE (si tiene)
+    const existing = cart.find(
+      (item) => item.id === product.id && item.selectedSize === product.selectedSize
+    );
 
-      // Si ya está en el carrito con el mismo talle
-      if (existing) {
-        const cantidadTotal = existing.quantity + (product.quantity || 1);
-        if (cantidadTotal > stockDisponible) {
-          alert(`❌ No hay suficiente stock. Disponible: ${stockDisponible} unidades. Ya tienes: ${existing.quantity}`);
-          return prev;
-        }
+    // Si ya está en el carrito con el mismo talle
+    if (existing) {
+      const cantidadTotal = existing.quantity + (product.quantity || 1);
+      if (cantidadTotal > stockDisponible) {
+        showToast(`No hay suficiente stock disponible.`, "error");
+        return false;
+      }
 
-        return prev.map((item) =>
+      setCart((prev) =>
+        prev.map((item) =>
           item.id === product.id && item.selectedSize === product.selectedSize
             ? { ...item, quantity: cantidadTotal }
             : item
-        );
-      }
+        )
+      );
+      return true;
+    }
 
-      // Nuevo producto (o producto con diferente talle)
-      return [...prev, { ...product, quantity: product.quantity || 1 }];
-    });
+    // Nuevo producto (o producto con diferente talle)
+    setCart((prev) => [...prev, { ...product, quantity: product.quantity || 1 }]);
     return true;
   }
 
@@ -83,7 +86,7 @@ export function CartProvider({ children }) {
       if (!item) return prev;
       
       if (item.quantity >= item.stock) {
-        alert(`❌ Stock máximo alcanzado. Disponible: ${item.stock} unidades`);
+        showToast(`Stock máximo alcanzado. Disponible: ${item.stock} unidades`, "error");
         return prev;
       }
       

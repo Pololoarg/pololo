@@ -101,13 +101,11 @@ function AdminNuevoProducto() {
     });
   };
 
-  // 👉 cambios en input file (múltiples imágenes)
+  // 👉 cambios en input file (agregar una imagen a la vez)
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files || []);
 
     if (files.length === 0) {
-      setForm((prev) => ({ ...prev, imageFiles: [], mainImageIndex: 0 }));
-      setImagePreviews([]);
       return;
     }
 
@@ -115,36 +113,32 @@ function AdminNuevoProducto() {
     const minSize = 10 * 1024; // 10KB
     const maxSize = 2 * 1024 * 1024; // 2MB
 
-    const accepted = [];
-    const previews = [];
+    const file = files[0]; // Solo procesar la primera imagen seleccionada
 
-    for (const file of files) {
-      if (file.size < minSize) {
-        setError("La imagen es muy pequeña. Mínimo 10KB");
-        continue;
-      }
-      if (file.size > maxSize) {
-        setError("La imagen no puede superar los 2MB");
-        continue;
-      }
-      if (!validTypes.includes(file.type)) {
-        setError("Formato no permitido. Solo JPG, PNG o WEBP");
-        continue;
-      }
-
-      accepted.push(file);
-      previews.push(URL.createObjectURL(file));
+    if (file.size < minSize) {
+      setError("La imagen es muy pequeña. Mínimo 10KB");
+      e.target.value = ''; // Limpiar el input
+      return;
     }
-
-    if (accepted.length === 0) {
-      setForm((prev) => ({ ...prev, imageFiles: [], mainImageIndex: 0 }));
-      setImagePreviews([]);
+    if (file.size > maxSize) {
+      setError("La imagen no puede superar los 2MB");
+      e.target.value = ''; // Limpiar el input
+      return;
+    }
+    if (!validTypes.includes(file.type)) {
+      setError("Formato no permitido. Solo JPG, PNG o WEBP");
+      e.target.value = ''; // Limpiar el input
       return;
     }
 
     setError(null);
-    setForm((prev) => ({ ...prev, imageFiles: accepted, mainImageIndex: 0 }));
-    setImagePreviews(previews);
+    // Agregar la nueva imagen a las existentes
+    setForm((prev) => ({
+      ...prev,
+      imageFiles: [...prev.imageFiles, file],
+    }));
+    setImagePreviews((prev) => [...prev, URL.createObjectURL(file)]);
+    e.target.value = ''; // Limpiar el input para poder agregar más
   };
 
   const removeImage = (index) => {
@@ -294,13 +288,13 @@ function AdminNuevoProducto() {
             type="file"
             className="form-control"
             accept="image/*"
-            multiple
             onChange={handleFileChange}
           />
           <div className="form-text">
-            • Mínimo: 600×600 px | Máximo: 2000×2000 px (por imagen)<br />
+            • Selecciona una imagen a la vez y haz clic en "Seleccionar archivo" para agregar más<br />
+            • Mínimo: 10 KB | Máximo: 2 MB (por imagen)<br />
             • Formatos: JPG, PNG o WEBP<br />
-            • Puedes subir varias y elegir la principal
+            • Puedes agregar varias y elegir cuál es la principal
           </div>
         </div>
 

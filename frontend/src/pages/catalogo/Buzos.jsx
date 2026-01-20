@@ -12,6 +12,7 @@ function Buzos() {
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
+  const [hoveredProduct, setHoveredProduct] = useState(null);
 
   const [searchParams] = useSearchParams();
 
@@ -78,16 +79,23 @@ function Buzos() {
             </div>
           ) : (
             <div className="products-grid">
-              {filtered.map((p) => (
+              {filtered.map((p) => {
+                const secondImage = p.images && p.images.length > 1 ? p.images[1].url : null;
+                const isHovered = hoveredProduct === p.id;
+                const displayImage = isHovered && secondImage ? secondImage : p.image;
+                
+                return (
                 <Link
                   key={p.id}
                   to={`/producto/${p.id}`}
                   className="text-decoration-none"
+                  onMouseEnter={() => setHoveredProduct(p.id)}
+                  onMouseLeave={() => setHoveredProduct(null)}
                 >
                   <div className="product-card">
-                    {p.image && (
+                    {displayImage && (
                       <img
-                        src={getImageUrl(p.image)}
+                        src={getImageUrl(displayImage)}
                         alt={p.name}
                         className="catalog-product-image"
                       />
@@ -104,7 +112,8 @@ function Buzos() {
                     </div>
                   </div>
                 </Link>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

@@ -12,6 +12,8 @@ function Catalogo() {
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
+  const [displayedCount, setDisplayedCount] = useState(12); // Mostrar 12 productos inicialmente
+  const [hoveredProduct, setHoveredProduct] = useState(null);
 
   const [searchParams] = useSearchParams();
 
@@ -22,6 +24,7 @@ function Catalogo() {
 
   useEffect(() => {
     setLoading(true);
+    setDisplayedCount(12); // Reset cuando cambian los filtros
 
     getProducts({
       category,
@@ -62,7 +65,15 @@ function Catalogo() {
     }
 
     setFiltered(result);
+    setDisplayedCount(12); // Reset cuando cambia el orden o búsqueda
   }, [search, priceOrder, products]);
+
+  const displayedProducts = filtered.slice(0, displayedCount);
+  const hasMoreProducts = displayedCount < filtered.length;
+
+  const handleLoadMore = () => {
+    setDisplayedCount(prev => prev + 12);
+  };
 
   if (loading) {
     return (
@@ -93,35 +104,75 @@ function Catalogo() {
               <p>No se encontraron productos.</p>
             </div>
           ) : (
-            <div className="products-grid">
-              {filtered.map((p) => (
-                <Link
-                  key={p.id}
-                  to={`/producto/${p.id}`}
-                  className="text-decoration-none"
-                >
-                  <div className="product-card">
-                    {p.image && (
-                      <img
-                        src={getImageUrl(p.image)}
-                        alt={p.name}
-                        className="catalog-product-image"
-                      />
-                    )}
+            <>
+              <div className="products-grid">
+                {displayedProducts.map((p) => {
+                  const secondImage = p.images && p.images.length > 1 ? p.images[1].url : null;
+                  const isHovered = hoveredProduct === p.id;
+                  const displayImage = isHovered && secondImage ? secondImage : p.image;
+                  
+                  return (
+                  <Link
+                    key={p.id}
+                    to={`/producto/${p.id}`}
+                    className="text-decoration-none"
+                    onMouseEnter={() => setHoveredProduct(p.id)}
+                    onMouseLeave={() => setHoveredProduct(null)}
+                  >
+                    <div className="product-card">
+                      {displayImage && (
+                        <img
+                          src={getImageUrl(displayImage)}
+                          alt={p.name}
+                          className="catalog-product-image"
+                        />
+                      )}
 
-                    <div className="product-body">
-                      <h5 className="product-name">{p.name}</h5>
-                      <p className="product-description">{p.description}</p>
-                      
-                      <div className="product-footer">
-                        <span className="product-price">${formatPrice(p.price)}</span>
-                        <span className="product-category">{p.category}</span>
+                      <div className="product-body">
+                        <h5 className="product-name">{p.name}</h5>
+                        <p className="product-description">{p.description}</p>
+                        
+                        <div className="product-footer">
+                          <span className="product-price">${formatPrice(p.price)}</span>
+                          <span className="product-category">{p.category}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
+                  </Link>
+                  );
+                })}
+              </div>
+
+              {hasMoreProducts && (
+                <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+                  <button
+                    onClick={handleLoadMore}
+                    className="btn btn-primary"
+                    style={{
+                      padding: '0.75rem 2rem',
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      border: 'none',
+                      borderRadius: '10px',
+                      color: '#fff',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.5)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  >
+                    Cargar más productos
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
