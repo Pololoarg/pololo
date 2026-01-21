@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { createProduct } from "../../services/productsService";
 import { apiClient } from "../../services/apiClient";
+import "./AdminNuevoProducto.css";
 
 function AdminNuevoProducto() {
   const navigate = useNavigate();

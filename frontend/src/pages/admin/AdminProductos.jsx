@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { getAllProductsAdmin, deleteProduct } from "../../services/productsService";
 import { getImageUrl } from "../../utils/imageUrl";
 import { useToast } from "../../context/ToastContext.jsx";
+import "./AdminProductos.css";
 
 
 function AdminProductos() {
@@ -14,6 +15,7 @@ function AdminProductos() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
+  const [displayedCount, setDisplayedCount] = useState(10); // Mostrar 10 productos inicialmente
 
 
   useEffect(() => {
@@ -21,6 +23,7 @@ function AdminProductos() {
       try {
         const data = await getAllProductsAdmin(); // trae todos
         setProducts(data);
+        setDisplayedCount(10); // Reset cuando cargan los productos
       } catch (err) {
         console.error(err);
         setError("No se pudieron cargar los productos");
@@ -46,159 +49,165 @@ function AdminProductos() {
 
   if (loading) {
     return (
-      <div className="container mt-4">
-        <p>Cargando productos...</p>
+      <div className="admin-empty">
+        <h3>Cargando productos...</h3>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="container mt-4">
-        <p>{error}</p>
+      <div className="admin-empty">
+        <h3>{error}</h3>
       </div>
     );
   }
 
   const filteredProducts = products.filter((p) => {
-  const matchSearch = p.name
-    .toLowerCase()
-    .includes(search.toLowerCase());
+    const matchSearch = p.name
+      .toLowerCase()
+      .includes(search.toLowerCase());
 
-  const matchCategory =
-    !categoryFilter || p.category === categoryFilter;
+    const matchCategory =
+      !categoryFilter || p.category === categoryFilter;
 
-  const matchActive =
-    activeFilter === "all" ||
-    (activeFilter === "active" && p.active) ||
-    (activeFilter === "inactive" && !p.active);
+    const matchActive =
+      activeFilter === "all" ||
+      (activeFilter === "active" && p.active) ||
+      (activeFilter === "inactive" && !p.active);
 
-  return matchSearch && matchCategory && matchActive;
-});
+    return matchSearch && matchCategory && matchActive;
+  });
+
+  const displayedProducts = filteredProducts.slice(0, displayedCount);
+  const hasMoreProducts = displayedCount < filteredProducts.length;
+
+  const handleLoadMore = () => {
+    setDisplayedCount(prev => prev + 10);
+  };
 
 
   return (
-    <div className="container mt-4">
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2>Administrar productos</h2>
-        <div className="d-flex gap-2">
-          <div className="btn-group" role="group">
-            <Link to="/admin/home" className="btn btn-outline-primary">
+    <div className="admin-productos-container">
+      <div className="admin-header">
+        <h1 className="admin-titulo">ADMINISTRAR PRODUCTOS</h1>
+        <div className="admin-header-actions">
+          <div className="admin-btn-group">
+            <Link to="/admin/home" className="admin-btn-nav">
               Home
             </Link>
-            <Link to="/admin/productos" className="btn btn-primary">
+            <Link to="/admin/productos" className="admin-btn-nav active">
               Productos
             </Link>
           </div>
-          <Link to="/admin/productos/nuevo" className="btn btn-success">
+          <Link to="/admin/productos/nuevo" className="admin-btn-nuevo">
             + Nuevo producto
           </Link>
         </div>
       </div>
 
-              <div className="card mb-3">
-          <div className="card-body">
-            <div className="row g-3">
+      <div className="admin-filters-card">
+        <div className="admin-filters-row">
+          <div className="admin-filter-group">
+            <label className="admin-filter-label">Buscar por nombre</label>
+            <input
+              type="text"
+              className="admin-filter-input"
+              placeholder="Nombre del producto..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
 
-              <div className="col-md-4">
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Buscar por nombre..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
+          <div className="admin-filter-group">
+            <label className="admin-filter-label">Categoría</label>
+            <select
+              className="admin-filter-select"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              <option value="">Todas las categorías</option>
+              <option value="remeras">Remeras</option>
+              <option value="pantalones">Pantalones</option>
+              <option value="buzos">Buzos</option>
+              <option value="marroquineria">Marroquinería</option>
+            </select>
+          </div>
 
-              <div className="col-md-4">
-                <select
-                  className="form-select"
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                >
-                  <option value="">Todas las categorías</option>
-                  <option value="remeras">Remeras</option>
-                  <option value="pantalones">Pantalones</option>
-                  <option value="buzos">Buzos</option>
-                  <option value="marroquineria">Marroquinería</option>
-                </select>
-              </div>
-
-              <div className="col-md-4">
-                <select
-                  className="form-select"
-                  value={activeFilter}
+          <div className="admin-filter-group">
+            <label className="admin-filter-label">Estado</label>
+            <select
+              className="admin-filter-select"
+              value={activeFilter}
                   onChange={(e) => setActiveFilter(e.target.value)}
                 >
                   <option value="all">Todos</option>
                   <option value="active">Solo activos</option>
                   <option value="inactive">Solo inactivos</option>
-                </select>
-              </div>
-
-            </div>
+            </select>
           </div>
         </div>
-
+      </div>
 
       {products.length === 0 ? (
-        <p>No hay productos cargados.</p>
+        <div className="admin-empty">
+          <h3>No hay productos cargados</h3>
+          <p>Comienza creando uno nuevo</p>
+        </div>
       ) : (
-        <div className="table-responsive">
-          <table className="table table-striped align-middle">
+        <div className="admin-table-wrapper">
+          <table className="admin-table">
             <thead>
               <tr>
-                <th>ID</th>
                 <th>Imagen</th>
                 <th>Nombre</th>
                 <th>Categoría</th>
                 <th>Precio</th>
-                <th>Stock</th>
-                <th>Activo</th>
-                <th style={{ width: "180px" }}>Acciones</th>
+                <th>Estado</th>
+                <th style={{ width: "160px" }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {filteredProducts.map((p) => (
+              {displayedProducts.map((p) => (
                 <tr key={p.id}>
-                  <td>{p.id}</td>
-                  {/* IMAGEN */}
                   <td>
                     {p.image ? (
                       <img
                         src={getImageUrl(p.image)}
                         alt={p.name}
-                        style={{
-                          width: "50px",
-                          height: "50px",
-                          objectFit: "cover",
-                          borderRadius: "6px",
-                          border: "1px solid #ddd",
-                        }}
+                        className="producto-imagen"
                       />
                     ) : (
                       <span className="text-muted">Sin imagen</span>
                     )}
                   </td>
-                  <td>{p.name}</td>
-                  <td>{p.category}</td>
-                  <td>${p.price}</td>
-                  <td>{p.stock}</td>
-                  <td>{p.active ? "Sí" : "No"}</td>
                   <td>
-                    <div className="d-flex gap-2">
-                      {/* EDITAR: lo hacemos en el siguiente paso */}
+                    <div className="producto-nombre">{p.name}</div>
+                  </td>
+                  <td>
+                    <span className="producto-categoria">{p.category}</span>
+                  </td>
+                  <td>
+                    <span className="producto-precio">${p.price}</span>
+                  </td>
+                  <td>
+                    <span className={`producto-estado ${p.active ? 'activo' : 'inactivo'}`}>
+                      {p.active ? '● Activo' : '● Inactivo'}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="producto-acciones">
                       <Link
                         to={`/admin/productos/${p.id}/editar`}
-                        className="btn btn-sm btn-outline-secondary"
+                        className="producto-btn producto-btn-editar"
                       >
-                        Editar
+                        ✎ Editar
                       </Link>
                       <button
-                        className="btn btn-sm btn-outline-danger"
+                        className="producto-btn producto-btn-eliminar"
                         onClick={() => handleDelete(p.id)}
                       >
-                        Eliminar
+                        🗑 Eliminar
                       </button>
                     </div>
                   </td>
@@ -206,6 +215,16 @@ function AdminProductos() {
               ))}
             </tbody>
           </table>
+          {hasMoreProducts && (
+            <div className="admin-load-more-container">
+              <button
+                className="admin-load-more-btn"
+                onClick={handleLoadMore}
+              >
+                Cargar más productos
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

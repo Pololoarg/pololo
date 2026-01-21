@@ -5,6 +5,7 @@ import { getProductById, updateProduct, deleteProductImage } from "../../service
 import { apiClient } from "../../services/apiClient";
 import { getImageUrl } from "../../utils/imageUrl";
 import { useToast } from "../../context/ToastContext.jsx";
+import "./AdminEditarProducto.css";
 
 function AdminEditarProducto() {
   const { id } = useParams();

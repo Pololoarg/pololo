@@ -15,6 +15,7 @@ import {
 
 import { searchProductsAdmin } from "../../services/productsService";
 import { useToast } from "../../context/ToastContext.jsx";
+import "./AdminHome.css";
 
 const API_URL = "http://localhost:4000";
 
@@ -451,17 +452,17 @@ const handleDrop = async (e, targetItem) => {
     }
   };
 
-  if (loading) return <p>Cargando...</p>;
+  if (loading) return <div className="admin-loading"><h3>Cargando...</h3></div>;
 
   return (
-    <div className="container mt-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>Admin Home</h1>
-        <div className="btn-group" role="group">
-          <Link to="/admin/home" className="btn btn-primary">
+    <div className="admin-home-container">
+      <div className="admin-header">
+        <h1 className="admin-titulo">Admin Home</h1>
+        <div className="admin-btn-group">
+          <Link to="/admin/home" className="admin-btn-nav active">
             Home
           </Link>
-          <Link to="/admin/productos" className="btn btn-outline-primary">
+          <Link to="/admin/productos" className="admin-btn-nav">
             Productos
           </Link>
         </div>
@@ -470,7 +471,8 @@ const handleDrop = async (e, targetItem) => {
       {/* ===================== */}
       {/* CARRUSEL */}
       {/* ===================== */}
-      <h3 className="mt-4 mb-3">Carrusel</h3>
+      <div className="admin-section">
+        <h2 className="admin-section-title">Carrusel</h2>
 
       <form onSubmit={handleCarouselSubmit}>
         <div className="mb-3">
@@ -703,17 +705,19 @@ const handleDrop = async (e, targetItem) => {
       {/* ===================== */}
       {/* PRODUCTOS DESTACADOS */}
       {/* ===================== */}
-      <h4 className="mt-5 mb-3">Productos Destacados</h4>
+      </div>
 
-      <div className="card mb-4">
-        <div className="card-body">
-          <h6 className="card-title mb-3">Agregar producto destacado</h6>
+      <div className="admin-section">
+        <h2 className="admin-section-title">Productos Destacados</h2>
+
+        <div className="admin-form-card">
+          <div className="admin-form-title">Agregar producto destacado</div>
           
-          <div className="mb-3">
-            <label className="form-label">Buscar producto</label>
+          <div className="admin-form-group">
+            <label className="admin-label">Buscar producto</label>
             <input
               type="text"
-              className="form-control"
+              className="admin-input"
               placeholder="Buscar producto..."
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
@@ -721,26 +725,51 @@ const handleDrop = async (e, targetItem) => {
           </div>
 
           {searchResults.length > 0 && (
-            <div className="mb-3">
-              <label className="form-label">Resultados de búsqueda</label>
-              <ul className="list-group">
+            <div className="admin-form-group">
+              <label className="admin-label">Resultados de búsqueda</label>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: '300px', overflowY: 'auto' }}>
                 {searchResults.map((product) => (
                   <li 
-                    key={product.id} 
-                    className="list-group-item d-flex justify-content-between align-items-center cursor-pointer"
+                    key={product.id}
                     onClick={() =>
                       setProductForm({
                         product_id: product.id,
                         orden: "",
                       })
                     }
-                    style={{ cursor: "pointer" }}
+                    style={{
+                      padding: '12px',
+                      marginBottom: '8px',
+                      background: 'rgba(102, 126, 234, 0.1)',
+                      border: '1px solid rgba(102, 126, 234, 0.3)',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.background = 'rgba(102, 126, 234, 0.2)';
+                      e.currentTarget.style.borderColor = '#667eea';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = 'rgba(102, 126, 234, 0.1)';
+                      e.currentTarget.style.borderColor = 'rgba(102, 126, 234, 0.3)';
+                    }}
                   >
                     <div>
-                      <strong>{product.nombre}</strong>
-                      <span className="text-muted ms-2 small">${product.precio}</span>
+                      <strong style={{ color: '#ffffffd9' }}>{product.nombre}</strong>
+                      <span style={{ color: '#b8b8b8', marginLeft: '12px', fontSize: '12px' }}>${product.precio}</span>
                     </div>
-                    <span className="badge bg-primary">Seleccionar</span>
+                    <span style={{
+                      background: '#667eea',
+                      color: 'white',
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '600'
+                    }}>Seleccionar</span>
                   </li>
                 ))}
               </ul>
@@ -748,25 +777,36 @@ const handleDrop = async (e, targetItem) => {
           )}
 
           {productForm.product_id && (
-            <div className="alert alert-info mb-3" role="alert">
+            <div style={{
+              background: 'rgba(102, 126, 234, 0.1)',
+              border: '1px solid rgba(102, 126, 234, 0.3)',
+              borderRadius: '12px',
+              padding: '16px',
+              marginBottom: '16px'
+            }}>
               {(() => {
                 const selectedProduct = searchResults.find(p => p.id === productForm.product_id);
                 return (
                   <div>
-                    <strong>Producto seleccionado:</strong>
+                    <strong style={{ color: '#ffffffd9' }}>Producto seleccionado:</strong>
                     {selectedProduct && (
-                      <div className="mt-2">
+                      <div style={{ marginTop: '12px' }}>
                         {selectedProduct.imagen && (
                           <img
                             src={selectedProduct.imagen}
                             alt={selectedProduct.nombre}
-                            className="img-fluid rounded mb-2"
-                            style={{ maxWidth: "100%", maxHeight: "200px", objectFit: "cover" }}
+                            style={{
+                              maxWidth: '100%',
+                              maxHeight: '200px',
+                              objectFit: 'cover',
+                              borderRadius: '8px',
+                              marginBottom: '12px'
+                            }}
                           />
                         )}
-                        <div className="mt-2">
-                          <p className="mb-1"><strong>{selectedProduct.nombre}</strong></p>
-                          <p className="text-muted small mb-0">${selectedProduct.precio}</p>
+                        <div style={{ marginTop: '12px' }}>
+                          <p style={{ marginBottom: '4px', color: '#ffffffd9' }}><strong>{selectedProduct.nombre}</strong></p>
+                          <p style={{ marginBottom: 0, color: '#b8b8b8', fontSize: '12px' }}>${selectedProduct.precio}</p>
                         </div>
                       </div>
                     )}
@@ -777,11 +817,11 @@ const handleDrop = async (e, targetItem) => {
           )}
 
           <form onSubmit={handleProductSubmit}>
-            <div className="row g-2">
-              <div className="col-md-8">
+            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '12px', alignItems: 'start' }}>
+              <div style={{ flex: 1 }}>
                 <input
                   type="number"
-                  className="form-control"
+                  className="admin-input"
                   placeholder="Orden (opcional)"
                   min="1"
                   value={productForm.orden}
@@ -789,91 +829,125 @@ const handleDrop = async (e, targetItem) => {
                     setProductForm({ ...productForm, orden: e.target.value })
                   }
                 />
-                <div className="form-text">Dejá vacío para orden automática</div>
+                <div style={{ fontSize: '12px', color: '#b8b8b8', marginTop: '4px' }}>Dejá vacío para orden automática</div>
               </div>
-              <div className="col-md-4">
-                <button 
-                  type="submit" 
-                  className="btn btn-success w-100"
-                  disabled={!productForm.product_id}
-                >
-                  Agregar
-                </button>
-              </div>
+              <button 
+                type="submit" 
+                className="admin-btn admin-btn-success"
+                disabled={!productForm.product_id}
+                style={{ marginTop: '0' }}
+              >
+                Agregar
+              </button>
             </div>
           </form>
         </div>
-      </div>
-
+      
       {homeProducts.length > 0 && (
-  <>
-    <h6 className="mb-3">
-      Productos cargados ({homeProducts.length})
-    </h6>
+        <>
+          <h3 className="admin-section-title" style={{ marginTop: '32px', marginBottom: '20px' }}>
+            Productos cargados ({homeProducts.length})
+          </h3>
 
-    <div className="row g-3 mb-4">
-      {homeProducts.map((item) => (
-        <div key={item.home_product_id} className="col-12 col-sm-6 col-lg-4">
-          <div
-            draggable
-            onDragStart={(e) => handleProductDragStart(e, item)}
-            onDragOver={handleProductDragOver}
-            onDrop={(e) => handleProductDrop(e, item)}
-            className="card h-100"
-            style={{
-              cursor: "move",
-              opacity: draggedProductItem?.home_product_id === item.home_product_id ? 0.7 : 1,
-              border:
-                draggedProductItem?.home_product_id === item.home_product_id
-                  ? "2px solid #007bff"
-                  : "1px solid #dee2e6",
-            }}
-          >
-            {item.imagen && (
-              <img
-                src={`${API_URL}${item.imagen}`}
-                alt={item.nombre}
-                className="card-img-top"
-                style={{
-                  height: "180px",
-                  objectFit: "cover",
-                }}
-              />
-            )}
-
-            <div className="card-body">
-              <h6 className="card-title">{item.nombre}</h6>
-
-              <p className="card-text text-muted small mb-1">
-                Precio: <strong>${item.precio}</strong>
-              </p>
-
-              <p className="card-text text-muted small mb-2">
-                Orden: <strong>{item.orden}</strong>
-              </p>
-
-              <div className="d-grid gap-2">
-                <button
-                  onClick={() => handleDeleteProduct(item.home_product_id)}
-                  className="btn btn-sm btn-danger"
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+            {homeProducts.map((item) => (
+              <div key={item.home_product_id}>
+                <div
+                  draggable
+                  onDragStart={(e) => handleProductDragStart(e, item)}
+                  onDragOver={handleProductDragOver}
+                  onDrop={(e) => handleProductDrop(e, item)}
+                  style={{
+                    cursor: "move",
+                    opacity: draggedProductItem?.home_product_id === item.home_product_id ? 0.7 : 1,
+                    background: 'linear-gradient(135deg, rgba(20,20,20,0.95), rgba(26,26,46,0.95))',
+                    border: draggedProductItem?.home_product_id === item.home_product_id
+                      ? '2px solid #667eea'
+                      : '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!draggedProductItem?.home_product_id === item.home_product_id) {
+                      e.currentTarget.style.boxShadow = '0 12px 40px rgba(102, 126, 234, 0.2)';
+                      e.currentTarget.style.borderColor = 'rgba(102, 126, 234, 0.3)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.borderColor = '1px solid rgba(255, 255, 255, 0.08)';
+                  }}
                 >
-                  Eliminar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  </>
-)}
+                  {item.imagen && (
+                    <img
+                      src={`${API_URL}${item.imagen}`}
+                      alt={item.nombre}
+                      style={{
+                        width: '100%',
+                        height: '200px',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  )}
 
+                  <div style={{ padding: '16px' }}>
+                    <h6 style={{ color: '#ffffffd9', marginBottom: '8px', fontWeight: '700' }}>{item.nombre}</h6>
+
+                    <p style={{ color: '#b8b8b8', marginBottom: '4px', fontSize: '12px' }}>
+                      Precio: <strong style={{ color: '#667eea' }}>${item.precio}</strong>
+                    </p>
+
+                    <p style={{ color: '#b8b8b8', marginBottom: '16px', fontSize: '12px' }}>
+                      Orden: <strong>{item.orden}</strong>
+                    </p>
+
+                    <button
+                      onClick={() => handleDeleteProduct(item.home_product_id)}
+                      style={{
+                        width: '100%',
+                        padding: '8px',
+                        background: 'rgba(220, 53, 69, 0.15)',
+                        color: '#ff6b6b',
+                        border: '2px solid rgba(220, 53, 69, 0.3)',
+                        borderRadius: '8px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(220, 53, 69, 0.25)';
+                        e.currentTarget.style.borderColor = '#ff6b6b';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(220, 53, 69, 0.15)';
+                        e.currentTarget.style.borderColor = 'rgba(220, 53, 69, 0.3)';
+                      }}
+                    >
+                      🗑 Eliminar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {homeProducts.length === 0 && search.length === 0 && (
-        <div className="alert alert-info" role="alert">
+        <div style={{
+          background: 'rgba(102, 126, 234, 0.1)',
+          border: '1px solid rgba(102, 126, 234, 0.3)',
+          borderRadius: '12px',
+          padding: '20px',
+          textAlign: 'center',
+          color: '#b8b8b8'
+        }}>
           No hay productos destacados. Búscalos con el buscador para agregarlos.
         </div>
       )}
+    </div>
     </div>
   );
 };
