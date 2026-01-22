@@ -1,4 +1,5 @@
 /* Admin Home Styles */
+@import './AdminShared.css';
 
 .admin-home-container {
   margin-top: 40px;
@@ -11,12 +12,8 @@
 .admin-titulo {
   font-size: 32px;
   font-weight: 800;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #ececec;
   margin-bottom: 32px;
-  letter-spacing: -0.02em;
 }
 
 /* Secciones */
@@ -146,169 +143,14 @@
   border-color: #ff6b6b;
 }
 
-/* Formularios */
-.admin-form-card {
-  background: linear-gradient(135deg, rgba(20,20,20,0.95), rgba(26,26,46,0.95));
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 32px;
-  margin-bottom: 32px;
-  backdrop-filter: blur(10px);
-}
-
-.admin-form-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #ffffffd9;
-  margin-bottom: 24px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.admin-form-title::before {
-  content: '';
-  width: 3px;
-  height: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 1px;
-}
-
+/* Formularios - usando clases compartidas admin-card y admin-form-* */
 .admin-form-group {
   margin-bottom: 20px;
 }
 
-.admin-label {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: #ffffffd9;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
+/* Botones Admin - usando admin-btn-* del shared */
 
-.admin-input,
-.admin-select,
-.admin-textarea {
-  width: 100%;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  color: #ffffffd9;
-  font-family: inherit;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  font-weight: 500;
-}
-
-.admin-input:focus,
-.admin-select:focus,
-.admin-textarea:focus {
-  outline: none;
-  border-color: #667eea;
-  background: rgba(102, 126, 234, 0.12);
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
-  color: #ffffff;
-}
-
-.admin-select option {
-  background: #1a1a2e;
-  color: #ffffffd9;
-  font-weight: 500;
-  padding: 8px 12px;
-}
-
-.admin-select option:hover {
-  background: #667eea;
-  color: white;
-}
-
-.admin-select option:checked {
-  background: #667eea;
-  color: #ffffff;
-  font-weight: 700;
-}
-
-.admin-textarea {
-  resize: vertical;
-  min-height: 100px;
-}
-
-/* Botones Admin */
-.admin-btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.admin-btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
-}
-
-.admin-btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.6);
-}
-
-.admin-btn-secondary {
-  background: rgba(255, 255, 255, 0.05);
-  color: #ffffffd9;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-}
-
-.admin-btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
-}
-
-.admin-btn-danger {
-  background: rgba(220, 53, 69, 0.15);
-  color: #ff6b6b;
-  border: 2px solid rgba(220, 53, 69, 0.3);
-}
-
-.admin-btn-danger:hover {
-  background: rgba(220, 53, 69, 0.25);
-  border-color: #ff6b6b;
-  transform: translateX(-2px);
-}
-
-.admin-btn-success {
-  background: rgba(37, 211, 102, 0.15);
-  color: #25d366;
-  border: 2px solid rgba(37, 211, 102, 0.3);
-}
-
-.admin-btn-success:hover {
-  background: rgba(37, 211, 102, 0.25);
-  border-color: #25d366;
-  transform: translateY(-2px);
-}
-
-/* Search y Filters */
-.admin-filters {
-  background: linear-gradient(135deg, rgba(20,20,20,0.95), rgba(26,26,46,0.95));
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 32px;
-  backdrop-filter: blur(10px);
-}
-
+/* Search y Filters - usando admin-card del shared */
 .admin-search-input {
   width: 100%;
   padding: 12px 16px;
@@ -353,22 +195,7 @@
   cursor: grabbing;
 }
 
-/* Loading & Empty States */
-.admin-loading,
-.admin-empty {
-  text-align: center;
-  padding: 60px 20px;
-  color: #b8b8b8;
-  font-size: 16px;
-}
-
-.admin-loading h3,
-.admin-empty h3 {
-  color: #ffffffd9;
-  font-size: 24px;
-  margin-bottom: 12px;
-}
-
+/* Responsive específico de Home */
 @media (max-width: 992px) {
   .carousel-item-admin {
     grid-template-columns: 120px 1fr;
@@ -398,14 +225,5 @@
     width: 100%;
     height: auto;
     aspect-ratio: 16 / 9;
-  }
-
-  .admin-form-card {
-    padding: 20px;
-  }
-
-  .admin-btn {
-    width: 100%;
-    justify-content: center;
   }
 }

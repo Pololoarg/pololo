@@ -57,7 +57,7 @@
 
 /* Tarjetas del formulario */
 .admin-form-section {
-  background: linear-gradient(135deg, rgba(20,20,20,0.95), rgba(26,26,46,0.95));
+  background: linear-gradient(135deg, #141414f2, #1a1a2ef2);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 32px;

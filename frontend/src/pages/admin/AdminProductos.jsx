@@ -107,45 +107,78 @@ function AdminProductos() {
       </div>
 
       <div className="admin-filters-card">
+        <div className="admin-filters-header">
+          <h3 className="admin-filters-title">Filtros de Búsqueda</h3>
+          <button 
+            className="admin-btn-clear-filters"
+            onClick={() => {
+              setSearch('');
+              setCategoryFilter('');
+              setActiveFilter('all');
+            }}
+          >
+            Limpiar filtros
+          </button>
+        </div>
         <div className="admin-filters-row">
           <div className="admin-filter-group">
             <label className="admin-filter-label">Buscar por nombre</label>
-            <input
-              type="text"
-              className="admin-filter-input"
-              placeholder="Nombre del producto..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <div className="admin-input-wrapper">
+              <input
+                type="text"
+                className="admin-form-input"
+                placeholder="Escribe el nombre del producto..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              {search && (
+                <button 
+                  className="admin-input-clear"
+                  onClick={() => setSearch('')}
+                >
+                  ×
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="admin-filter-group">
             <label className="admin-filter-label">Categoría</label>
-            <select
-              className="admin-filter-select"
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-            >
-              <option value="">Todas las categorías</option>
-              <option value="remeras">Remeras</option>
-              <option value="pantalones">Pantalones</option>
-              <option value="buzos">Buzos</option>
-              <option value="marroquineria">Marroquinería</option>
-            </select>
+            <div className="admin-select-wrapper">
+              <select
+                className="admin-form-select"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+              >
+                <option value="">Todas las categorías</option>
+                <option value="remeras">Remeras</option>
+                <option value="pantalones">Pantalones</option>
+                <option value="buzos">Buzos</option>
+                <option value="marroquineria">Marroquinería</option>
+              </select>
+            </div>
           </div>
 
           <div className="admin-filter-group">
             <label className="admin-filter-label">Estado</label>
-            <select
-              className="admin-filter-select"
-              value={activeFilter}
-                  onChange={(e) => setActiveFilter(e.target.value)}
-                >
-                  <option value="all">Todos</option>
-                  <option value="active">Solo activos</option>
-                  <option value="inactive">Solo inactivos</option>
-            </select>
+            <div className="admin-select-wrapper">
+              <select
+                className="admin-form-select"
+                value={activeFilter}
+                onChange={(e) => setActiveFilter(e.target.value)}
+              >
+                <option value="all">Todos los estados</option>
+                <option value="active">Solo activos</option>
+                <option value="inactive">Solo inactivos</option>
+              </select>
+            </div>
           </div>
+        </div>
+        <div className="admin-filters-summary">
+          Mostrando <strong>{displayedProducts.length}</strong> de <strong>{filteredProducts.length}</strong> productos
+          {filteredProducts.length !== products.length && (
+            <span className="filters-active-badge">Filtros activos</span>
+          )}
         </div>
       </div>
 
@@ -201,13 +234,13 @@ function AdminProductos() {
                         to={`/admin/productos/${p.id}/editar`}
                         className="producto-btn producto-btn-editar"
                       >
-                        ✎ Editar
+                        <span className="btn-icon">✎</span> Editar
                       </Link>
                       <button
                         className="producto-btn producto-btn-eliminar"
                         onClick={() => handleDelete(p.id)}
                       >
-                        🗑 Eliminar
+                        <span className="btn-icon">✕</span> Eliminar
                       </button>
                     </div>
                   </td>

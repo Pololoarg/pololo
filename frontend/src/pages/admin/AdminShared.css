@@ -1,0 +1,257 @@
+/* Admin Shared Styles - Estilos comunes para todas las páginas admin */
+
+/* Container Base */
+.admin-container-base {
+  margin-top: 40px;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 1rem 60px;
+}
+
+/* Headers */
+.admin-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-page-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: #ececec;
+  margin: 0;
+  letter-spacing: -0.02em;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.admin-back-btn {
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  color: #ffffffd9;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-back-btn:hover {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Form Elements Compartidos */
+.admin-form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffffd9;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.admin-form-input,
+.admin-form-select,
+.admin-form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  color: #ffffffd9;
+  font-family: inherit;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.admin-form-input:focus,
+.admin-form-select:focus,
+.admin-form-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.12);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+  color: #ffffff;
+}
+
+.admin-form-input::placeholder {
+  color: #8b8b8b;
+}
+
+.admin-form-select option {
+  background: #1a1a2e;
+  color: #ffffffd9;
+  font-weight: 500;
+  padding: 8px 12px;
+}
+
+.admin-form-select option:hover {
+  background: #667eea;
+  color: white;
+}
+
+.admin-form-select option:checked {
+  background: #667eea;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.admin-form-textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* Cards */
+.admin-card {
+  background: linear-gradient(135deg, rgba(20,20,20,0.95), rgba(26,26,46,0.95));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 32px;
+  backdrop-filter: blur(10px);
+}
+
+.admin-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffffd9;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-card-title::before {
+  content: '';
+  width: 3px;
+  height: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 1px;
+}
+
+/* Botones Comunes */
+.admin-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.admin-btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
+
+.admin-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.6);
+}
+
+.admin-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffffd9;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.admin-btn-danger {
+  background: rgba(220, 53, 69, 0.15);
+  color: #ff6b6b;
+  border: 2px solid rgba(220, 53, 69, 0.3);
+}
+
+.admin-btn-danger:hover {
+  background: rgba(220, 53, 69, 0.25);
+  border-color: #ff6b6b;
+}
+
+.admin-btn-success {
+  background: linear-gradient(135deg, #25d366 0%, #1eac5c 100%);
+  color: white;
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4);
+}
+
+.admin-btn-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(37, 211, 102, 0.6);
+}
+
+/* Estados */
+.admin-estado-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-estado-badge.activo {
+  background: rgba(37, 211, 102, 0.15);
+  color: #25d366;
+}
+
+.admin-estado-badge.inactivo {
+  background: rgba(255, 107, 107, 0.15);
+  color: #ff6b6b;
+}
+
+/* Empty & Loading States */
+.admin-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #b8b8b8;
+}
+
+.admin-empty-state h3 {
+  font-size: 20px;
+  color: #ffffffd9;
+  margin-bottom: 12px;
+}
+
+/* Responsive Base */
+@media (max-width: 768px) {
+  .admin-page-title {
+    font-size: 24px;
+  }
+
+  .admin-card {
+    padding: 20px;
+  }
+
+  .admin-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

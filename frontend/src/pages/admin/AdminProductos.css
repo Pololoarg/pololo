@@ -1,4 +1,5 @@
 /* Admin Productos Styles */
+@import './AdminShared.css';
 
 .admin-productos-container {
   margin-top: 40px;
@@ -8,6 +9,7 @@
   padding: 0 1rem 60px;
 }
 
+/* Header específico de productos */
 .admin-header {
   display: flex;
   justify-content: space-between;
@@ -20,11 +22,9 @@
 .admin-header h1 {
   font-size: 32px;
   font-weight: 800;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #ececec;
   margin: 0;
+  letter-spacing: -0.02em;
 }
 
 .admin-header-actions {
@@ -86,7 +86,7 @@
   box-shadow: 0 12px 32px rgba(37, 211, 102, 0.6);
 }
 
-/* Filtros */
+/* Filtros - usando admin-card del shared */
 .admin-filters-card {
   background: linear-gradient(135deg, rgba(20,20,20,0.95), rgba(26,26,46,0.95));
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -94,6 +94,47 @@
   padding: 24px;
   margin-bottom: 32px;
   backdrop-filter: blur(10px);
+}
+
+.admin-filters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-filters-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffffd9;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-btn-clear-filters {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  color: #ffffffd9;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-btn-clear-filters:hover {
+  background: rgba(255, 107, 107, 0.15);
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+  transform: translateY(-2px);
 }
 
 .admin-filters-row {
@@ -114,51 +155,104 @@
   color: #ffffffd9;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.admin-filter-input,
-.admin-filter-select {
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  color: #ffffffd9;
+/* Input con icono */
+.admin-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.admin-input-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 16px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.admin-input-with-icon {
+  padding-left: 42px !important;
+  padding-right: 40px !important;
+}
+
+.admin-input-clear {
+  position: absolute;
+  right: 12px;
+  background: rgba(255, 107, 107, 0.15);
+  border: none;
+  color: #ff6b6b;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.admin-input-clear:hover {
+  background: rgba(255, 107, 107, 0.3);
+  transform: scale(1.1);
+}
+
+/* Select con icono */
+.admin-select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.admin-select-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 16px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.admin-select-with-icon {
+  padding-left: 42px !important;
+}
+
+/* Resumen de filtros */
+.admin-filters-summary {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #b8b8b8;
   font-size: 14px;
-  font-family: inherit;
-  transition: all 0.3s ease;
-  font-weight: 500;
+  flex-wrap: wrap;
 }
 
-.admin-filter-input:focus,
-.admin-filter-select:focus {
-  outline: none;
-  border-color: #667eea;
-  background: rgba(102, 126, 234, 0.12);
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
-  color: #ffffff;
-}
-
-.admin-filter-select option {
-  background: #1a1a2e;
-  color: #ffffffd9;
-  font-weight: 500;
-  padding: 8px 12px;
-}
-
-.admin-filter-select option:hover {
-  background: #667eea;
-  color: white;
-}
-
-.admin-filter-select option:checked {
-  background: #667eea;
-  color: #ffffff;
+.admin-filters-summary strong {
+  color: #667eea;
   font-weight: 700;
 }
 
-.admin-filter-input::placeholder {
-  color: #8b8b8b;
+.filters-active-badge {
+  background: rgba(102, 126, 234, 0.15);
+  color: #667eea;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
+
+/* Usar admin-form-input y admin-form-select del shared para los filtros */
 
 /* Tabla de productos */
 .admin-table-wrapper {
@@ -257,6 +351,7 @@
   color: #ff6b6b;
 }
 
+/* Acciones de productos */
 .producto-acciones {
   display: flex;
   gap: 8px;
@@ -273,7 +368,15 @@
   text-decoration: none;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
+}
+
+.producto-btn .btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
 }
 
 .producto-btn-editar {
@@ -300,19 +403,7 @@
   transform: translateX(-2px);
 }
 
-/* Empty & Loading States */
-.admin-empty {
-  text-align: center;
-  padding: 60px 20px;
-  color: #b8b8b8;
-}
-
-.admin-empty h3 {
-  font-size: 20px;
-  color: #ffffffd9;
-  margin-bottom: 12px;
-}
-
+/* Responsive específico de Productos */
 @media (max-width: 992px) {
   .admin-header {
     flex-direction: column;
@@ -336,7 +427,19 @@
 
   .admin-table th,
   .admin-table td {
-    padding: 12px 8px;
+    padding: 10px 6px;
+  }
+
+  /* Ocultar columna de imagen en mobile */
+  .admin-table th:nth-child(1),
+  .admin-table td:nth-child(1) {
+    display: none;
+  }
+
+  /* Ocultar categoría en mobile */
+  .admin-table th:nth-child(3),
+  .admin-table td:nth-child(3) {
+    display: none;
   }
 
   .producto-imagen {
@@ -344,17 +447,48 @@
     height: 50px;
   }
 
+  .producto-nombre {
+    font-size: 13px;
+  }
+
+  .producto-precio {
+    font-size: 13px;
+  }
+
+  .producto-estado {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
   .producto-acciones {
     flex-direction: column;
+    gap: 6px;
   }
 
   .producto-btn {
     width: 100%;
     justify-content: center;
+    font-size: 11px;
+    padding: 6px 10px;
   }
 
   .admin-filters-row {
     grid-template-columns: 1fr;
+  }
+
+  .admin-filters-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-btn-clear-filters {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .admin-filters-summary {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 
