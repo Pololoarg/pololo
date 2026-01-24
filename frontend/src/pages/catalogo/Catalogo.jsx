@@ -21,18 +21,22 @@ function Catalogo() {
   const priceOrder = searchParams.get("price") || "";
 
   useEffect(() => {
-    (async () => {
+    const fetchData = async () => {
       try {
-        const data = await getProducts(); // trae todos
+        setLoading(true);
+        const data = await getProducts({ category, size, search });
         setProducts(data);
         setFiltered(data);
         setError(null);
-      })
-      .catch(err => {
+      } catch (err) {
         console.error(err);
         setError("No se pudieron cargar los productos");
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [category, size, search]);
 
   // 🔹 búsqueda + orden por precio
@@ -41,15 +45,20 @@ function Catalogo() {
 
     if (search) {
       const text = search.toLowerCase();
-
-      const result = products.filter(
+      result = result.filter(
         (p) =>
-          p.name.toLowerCase().includes(text) ||
-          p.description.toLowerCase().includes(text)
+          (p.name || "").toLowerCase().includes(text) ||
+          (p.description || "").toLowerCase().includes(text)
       );
-
-      setFiltered(result);
     }
+
+    if (priceOrder === "asc") {
+      result.sort((a, b) => Number(a.price) - Number(b.price));
+    } else if (priceOrder === "desc") {
+      result.sort((a, b) => Number(b.price) - Number(a.price));
+    }
+
+    setFiltered(result);
   }, [search, products]);
 
   if (loading) {
@@ -104,20 +113,25 @@ function Catalogo() {
             >
               <div className="card h-100">
 
-                {p.image && (
-                  <img
-                    src={getImageUrl(p.image)}
-                    alt={p.name}
-                    className="card-img-top"
-                  />
-                )}
+                {(() => {
+                  const mainImg = p.images?.find((img) => img.is_main)?.image_url ?? p.image;
+                  return (
+                    mainImg && (
+                      <img
+                        src={getImageUrl(mainImg)}
+                        alt={p.name}
+                        className="card-img-top"
+                      />
+                    )
+                  );
+                })()}
 
                 <div className="card-body d-flex flex-column">
                   <h5 className="card-title">{p.name}</h5>
                   <p className="card-text flex-grow-1">
                     {p.description}
                   </p>
-                  <p className="fw-bold mb-1">${p.price}</p>
+                  <p className="fw-bold mb-1">{formatPrice(p.price)}</p>
                   <small className="text-muted">
                     Categoría: {p.category}
                   </small>
