@@ -12,6 +12,8 @@ function Catalogo() {
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
+  const [hoveredProduct, setHoveredProduct] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(10);
 
   const [searchParams] = useSearchParams();
 
@@ -28,6 +30,7 @@ function Catalogo() {
         setProducts(data);
         setFiltered(data);
         setError(null);
+        setVisibleCount(10); // reset paginación al cambiar filtros
       } catch (err) {
         console.error(err);
         setError("No se pudieron cargar los productos");
@@ -59,7 +62,11 @@ function Catalogo() {
     }
 
     setFiltered(result);
-  }, [search, products]);
+    setVisibleCount(10); // reset paginación cuando cambian filtros locales
+  }, [search, products, priceOrder]);
+
+  const showMore = () => setVisibleCount((prev) => prev + 10);
+  const visibleProducts = filtered.slice(0, visibleCount);
 
   if (loading) {
     return (
@@ -78,25 +85,9 @@ function Catalogo() {
     );
   }
 
-  if (filtered.length === 0) {
-    return (
-      <div className="container mt-4">
-        <h1 className="mb-3">Catálogo</h1>
-
-        {search && (
-          <p className="text-muted">
-            Resultados para: <strong>{search}</strong>
-          </p>
-        )}
-
-        <p>No se encontraron productos.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="container mt-4">
-      <h1 className="mb-3">Catálogo</h1>
+      <h1 className="mb-4" style={{ fontSize: "2.5rem" }}>CATÁLOGO</h1>
 
       {search && (
         <p className="text-muted">
@@ -104,43 +95,68 @@ function Catalogo() {
         </p>
       )}
 
-      <div className="row">
-        {filtered.map((p) => (
-          <div key={p.id} className="col-md-4 mb-4">
-            <Link
-              to={`/producto/${p.id}`}
-              className="text-decoration-none text-dark"
-            >
-              <div className="card h-100">
+      <div className="catalog-layout">
+        <FiltersSidebar filters={["category", "size", "price"]} />
 
-                {(() => {
-                  const mainImg = p.images?.find((img) => img.is_main)?.image_url ?? p.image;
-                  return (
-                    mainImg && (
-                      <img
-                        src={getImageUrl(mainImg)}
-                        alt={p.name}
-                        className="card-img-top"
-                      />
-                    )
-                  );
-                })()}
+        <div>
+          {filtered.length === 0 ? (
+            <div className="no-products">
+              <p>No hay productos con esos filtros.</p>
+            </div>
+          ) : (
+            <div className="products-grid">
+              {visibleProducts.map((p) => {
+                const mainImage =
+                  p.images?.find((img) => img.is_main)?.image_url ||
+                  p.image ||
+                  p.images?.[0]?.url ||
+                  p.images?.[0]?.image_url;
 
-                <div className="card-body d-flex flex-column">
-                  <h5 className="card-title">{p.name}</h5>
-                  <p className="card-text flex-grow-1">
-                    {p.description}
-                  </p>
-                  <p className="fw-bold mb-1">{formatPrice(p.price)}</p>
-                  <small className="text-muted">
-                    Categoría: {p.category}
-                  </small>
+                const secondImage = p.images?.[1]?.url || p.images?.[1]?.image_url;
+                const isHovered = hoveredProduct === p.id;
+                const displayImage = isHovered && secondImage ? secondImage : mainImage;
+
+                return (
+                  <Link
+                    key={p.id}
+                    to={`/producto/${p.id}`}
+                    className="text-decoration-none"
+                    onMouseEnter={() => setHoveredProduct(p.id)}
+                    onMouseLeave={() => setHoveredProduct(null)}
+                  >
+                    <div className="product-card">
+                      {displayImage && (
+                        <img
+                          src={getImageUrl(displayImage)}
+                          alt={p.name}
+                          className="catalog-product-image"
+                        />
+                      )}
+
+                      <div className="product-body">
+                        <h5 className="product-name">{p.name}</h5>
+                        <p className="product-description">{p.description}</p>
+
+                        <div className="product-footer">
+                          <span className="product-price">${formatPrice(p.price)}</span>
+                          <span className="product-category">{p.category}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+
+              {visibleProducts.length < filtered.length && (
+                <div className="load-more-wrapper">
+                  <button className="load-more-btn" onClick={showMore}>
+                    Cargar más
+                  </button>
                 </div>
-
-              </div>
-            </Link>
-          </div>
-        ))}
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

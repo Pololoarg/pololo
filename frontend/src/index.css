@@ -92,7 +92,7 @@ a:hover { color: #ffffff; text-decoration: underline; }
 .btn { color: #fff !important; }
 
 /* Card text contrast */
-.card, .card-body { color: rgba(255,255,255,0.95); }
+.card, .card-body { color: #fffffff2; }
 .card-title { font-weight: 600; }
 
 /* Carousel title overlay */
