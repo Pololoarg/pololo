@@ -1,26 +1,20 @@
-// backend/src/config/env.js
 import "dotenv/config";
-
-// Función modificada para que no sea tan estricta
-function getEnvVar(name) {
-  return process.env[name] || ""; 
-}
 
 export const envs = {
   PORT: process.env.PORT || 4000,
   NODE_ENV: process.env.NODE_ENV || "development",
 
-  DATABASE_URL: process.env.DATABASE_URL || "", 
+  // Es mejor dejarlo como undefined si no existe, 
+  // así el Pool de la DB nos da un error más claro.
+  DATABASE_URL: process.env.DATABASE_URL, 
 
-  // Ahora estas no tiran error si están vacías
-  DB_HOST: getEnvVar("DB_HOST"),
-  DB_PORT: getEnvVar("DB_PORT"),
-  DB_USER: getEnvVar("DB_USER"),
-  DB_PASSWORD: getEnvVar("DB_PASSWORD"),
-  DB_NAME: getEnvVar("DB_NAME"),
-
-  JWT_SECRET: process.env.JWT_SECRET || "fallback_secret_por_si_las_dudas",
+  JWT_SECRET: process.env.JWT_SECRET || "pololo_secret_2026",
 
   ADMIN_EMAIL: process.env.ADMIN_EMAIL,
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
 };
+
+// Validación rápida para que no te vuelvas loco buscando
+if (!envs.DATABASE_URL) {
+  console.warn("⚠️  CUIDADO: DATABASE_URL no está definida en el archivo .env");
+}

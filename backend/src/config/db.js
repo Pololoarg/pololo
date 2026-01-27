@@ -1,35 +1,33 @@
-// src/config/db.js
 import pkg from "pg";
 import { envs } from "./env.js";
 
 const { Pool } = pkg;
 
-// Solo activamos SSL si no estamos en modo desarrollo o si la URL es de Supabase
-const useSSL = envs.NODE_ENV === "production" || envs.DB_HOST.includes("supabase.co") || envs.DB_HOST.includes("pooler.supabase.com");
-
-const sslConfig = useSSL 
+// Esta es la forma más segura: Si estamos en Render (production), usamos SSL.
+// Si estamos en tu PC (development), lo apagamos.
+const sslConfig = process.env.NODE_ENV === "production" 
   ? { rejectUnauthorized: false } 
-  : false; // En localhost (desarrollo) se desactiva
+  : false;
 
-export const pool = envs.DATABASE_URL
-  ? new Pool({
-      connectionString: envs.DATABASE_URL,
-      ssl: sslConfig,
-    })
-  : new Pool({
-      host: envs.DB_HOST,
-      port: Number(envs.DB_PORT),
-      user: envs.DB_USER,
-      password: envs.DB_PASSWORD,
-      database: envs.DB_NAME,
-      ssl: sslConfig,
-    });
+export const pool = new Pool({
+  connectionString: envs.DATABASE_URL,
+  ssl: sslConfig,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000, // Aumentamos un poco el tiempo por las dudas
+});
 
 export const testDBConnection = async () => {
+  let client;
   try {
-    const result = await pool.query("SELECT NOW()");
-    console.log("✅ Conectado a PostgreSQL:", result.rows[0].now);
+    client = await pool.connect();
+    const result = await client.query("SELECT NOW()");
+    console.log("✅ Conexión exitosa a PostgreSQL");
+    return true;
   } catch (err) {
-    console.error("❌ Error conectando a PostgreSQL:", err.message);
+    console.error("❌ Error de conexión a PostgreSQL:");
+    console.error("Mensaje:", err.message);
+  } finally {
+    if (client) client.release();
   }
 };
