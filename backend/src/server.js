@@ -5,6 +5,7 @@ import router from "./routes/index.routes.js";
 import { testDBConnection } from "./config/db.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import { exec } from "child_process"; // Importación necesaria para el script
 
 // Rutas específicas
 import homeRoutes from "./routes/home.routes.js";
@@ -16,8 +17,6 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // --- CONFIGURACIÓN DE CORS ---
-// Usamos origin: true para que acepte cualquier origen en esta etapa de pruebas, 
-// es más flexible que el '*' para ciertos navegadores.
 app.use(cors({
   origin: true, 
   credentials: true,
@@ -48,7 +47,6 @@ app.get("/", (req, res) => {
 });
 
 // --- MANEJO DE ERRORES GLOBAL ---
-// Esto evita que el servidor se caiga si hay un error no controlado
 app.use((err, req, res, next) => {
   console.error("💥 Error no controlado:", err.stack);
   res.status(500).json({ 
@@ -65,17 +63,32 @@ app.use((req, res) => {
 // Iniciar servidor
 const startServer = async () => {
   try {
-    // Primero intentamos conectar a la DB
+    // 1. Intentamos conectar a la DB
     await testDBConnection();
     
+    // 2. Ejecutar script de actualización de contraseña si existen las variables
+    if (process.env.ADMIN_PASSWORD && process.env.ADMIN_EMAIL) {
+      console.log("🚀 Detectadas credenciales de Admin en Environment, actualizando...");
+      
+      // Construimos la ruta al script de forma segura (sube un nivel desde src y entra a scripts)
+      const scriptPath = path.join(__dirname, "..", "scripts", "updateAdminPassword.js");
+      
+      exec(`node "${scriptPath}"`, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`❌ Error al ejecutar script de password: ${error.message}`);
+          return;
+        }
+        if (stderr) console.error(`⚠️ Stderr del script: ${stderr}`);
+        console.log(`✅ Resultado del script: ${stdout}`);
+      });
+    }
+
     const PORT = envs.PORT || 10000;
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ Backend escuchando en el puerto ${PORT}`);
     });
   } catch (error) {
-    console.error("❌ No se pudo iniciar el servidor debido a la base de datos:", error);
-    // IMPORTANTE: En Render, no queremos que el proceso muera del todo 
-    // para poder entrar a ver los logs.
+    console.error("❌ No se pudo iniciar el servidor:", error);
   }
 };
 
