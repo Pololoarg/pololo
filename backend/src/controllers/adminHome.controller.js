@@ -3,16 +3,13 @@ import {
     getAllCarousel,
     createCarouselImage,
     updateCarouselImage,
-  deleteCarouselImage,
-  getCarouselById,
-  clearCarouselField,
+    deleteCarouselImage,
+    getCarouselById,
+    clearCarouselField,
     toggleCarousel
 } from '../data/homeCarousel.repository.js';
 
 import { pool } from '../config/db.js';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
-import path from 'path';
 
 import {
     getHomeProductsAdmin,
@@ -22,17 +19,18 @@ import {
     toggleHomeProduct,
 } from '../data/homeProducts.repository.js';
 
+// ==========================================
+// CARRUSEL DE IMÁGENES
+// ==========================================
 
 // GET /api/admin/home/carousel
 const getCarouselAdmin = async (req, res) => {
     try {
         console.log('🔍 Obteniendo carrusel admin...');
         const images = await getAllCarousel();
-        console.log('✅ Carrusel obtenido:', images);
         return res.status(200).json(images);
     } catch (error) {
         console.error('❌ Error al obtener carrusel admin:', error.message);
-        console.error('Stack:', error.stack);
         return res.status(500).json({
             message: 'Error al obtener carrusel',
             error: error.message
@@ -43,7 +41,6 @@ const getCarouselAdmin = async (req, res) => {
 // POST /api/admin/home/carousel
 const addCarouselImage = async (req, res) => {
   try {
-    // ahora esperamos dos archivos posibles: 'image' y 'image_mobile'
     const files = req.files || {};
 
     if ((!files.image || files.image.length === 0) && (!files.image_mobile || files.image_mobile.length === 0)) {
@@ -55,12 +52,13 @@ const addCarouselImage = async (req, res) => {
     const imageFile = files.image && files.image[0];
     const mobileFile = files.image_mobile && files.image_mobile[0];
 
-    const imagePath = imageFile ? `/uploads/carousel/${imageFile.filename}` : null;
-    const mobilePath = mobileFile ? `/uploads/carousel/${mobileFile.filename}` : null;
+    // USAMOS .path PORQUE CLOUDINARY DEVUELVE LA URL COMPLETA AHÍ
+    const imagePath = imageFile ? imageFile.path : null;
+    const mobilePath = mobileFile ? mobileFile.path : null;
 
     const newImage = await createCarouselImage({
-      imagen_url: imagePath,
-      imagen_mobile_url: mobilePath,
+      imagen_url: imagePath, // URL de Cloudinary
+      imagen_mobile_url: mobilePath, // URL de Cloudinary
       titulo,
       orden,
     });
@@ -72,12 +70,10 @@ const addCarouselImage = async (req, res) => {
   }
 };
 
-
 // PUT /api/admin/home/carousel/:id
 const editCarouselImage = async (req, res) => {
     try {
         const { id } = req.params;
-
         const image = await updateCarouselImage(id, req.body);
         return res.status(200).json(image);
     } catch (error) {
@@ -85,6 +81,7 @@ const editCarouselImage = async (req, res) => {
         return res.status(500).json({ message: 'Error al actualizar imagen del carrusel' });
     } 
 };
+
 // DELETE /api/admin/home/carousel/:id
 const removeCarouselImage = async (req, res) => {
     try {
@@ -92,35 +89,18 @@ const removeCarouselImage = async (req, res) => {
         const { field } = req.query; // opcional: imagen_url | imagen_mobile_url
 
         if (field) {
-          // borrar sólo el campo especificado
+          // Validar campo
           if (!['imagen_url','imagen_mobile_url'].includes(field)) {
             return res.status(400).json({ message: 'Campo inválido' });
           }
 
-          // obtener la fila para borrar el archivo del disco si existe
-          const row = await getCarouselById(id);
-          const filePath = row ? row[field] : null;
-
+          // Simplemente limpiamos el campo en la DB. 
+          // Ya no intentamos borrar el archivo físico porque está en Cloudinary.
           const updated = await clearCarouselField(id, field);
-
-          // borrar archivo físico si existe
-          if (filePath) {
-            try {
-              const __filename = fileURLToPath(import.meta.url);
-              const __dirname = path.dirname(__filename);
-              const absPath = path.join(__dirname, '..', filePath);
-              if (fs.existsSync(absPath)) {
-                fs.unlinkSync(absPath);
-              }
-            } catch (err) {
-              console.warn('No se pudo eliminar archivo físico:', err.message);
-            }
-          }
-
           return res.status(200).json(updated);
         }
 
-        // sin campo: eliminar fila completa
+        // Eliminar fila completa de la DB
         await deleteCarouselImage(id);
         return res.status(204).send();
     } catch (error) {
@@ -128,6 +108,7 @@ const removeCarouselImage = async (req, res) => {
         return res.status(500).json({ message: 'Error al eliminar imagen del carrusel' });
     } 
 };
+
 // PATCH /api/admin/home/carousel/:id/toggle
 const toggleCarouselImageActive = async (req, res) => {
   try {
@@ -146,7 +127,11 @@ const toggleCarouselImageActive = async (req, res) => {
     return res.status(500).json({ message: "Error toggle carrusel" });
   }
 };
-// PRODUCTOS DESTCADOS
+
+// ==========================================
+// PRODUCTOS DESTACADOS
+// ==========================================
+
 // GET /api/admin/home/products
 const getAdminHomeProducts = async (req, res) => {
     try {
@@ -159,6 +144,7 @@ const getAdminHomeProducts = async (req, res) => {
         });
     }
 };
+
 // POST /api/admin/home/products
 const addHomeProduct = async (req, res) => {
   try {
@@ -176,6 +162,7 @@ const addHomeProduct = async (req, res) => {
     return res.status(500).json({ message: 'Error al agregar producto destacado' });
   }
 };
+
 // PUT /api/admin/home/products/:id
 const editHomeProduct = async (req, res) => {
     try {
@@ -191,6 +178,7 @@ const editHomeProduct = async (req, res) => {
         return res.status(500).json({ message: 'Error al actualizar producto destacado' });
     }
 };
+
 // DELETE /api/admin/home/products/:id
 const removeHomeProduct = async (req, res) => {
     try {
@@ -202,6 +190,7 @@ const removeHomeProduct = async (req, res) => {
         return res.status(500).json({ message: 'Error al eliminar producto destacado' });
     }
 };
+
 // PATCH /api/admin/home/products/:id/toggle
 const toggleHomeProductActive = async (req, res) => {
   try {
@@ -221,14 +210,12 @@ const toggleHomeProductActive = async (req, res) => {
   }
 };
 
-export{
-    //carusel
+export {
     getCarouselAdmin,
     addCarouselImage,
     editCarouselImage,
     removeCarouselImage,
     toggleCarouselImageActive,
-    //productos destacadoss
     getAdminHomeProducts,
     addHomeProduct,
     editHomeProduct,

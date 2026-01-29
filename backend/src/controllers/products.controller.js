@@ -1,5 +1,28 @@
 // src/controllers/products.controller.js
 import { pool } from '../config/db.js';
+import { cloudinary } from '../config/cloudinary.js';
+
+// Extrae el `public_id` de una URL de Cloudinary.
+const getPublicIdFromUrl = (url) => {
+  if (!url || typeof url !== 'string') return null;
+  try {
+    const u = new URL(url);
+    const pathname = u.pathname; // e.g. /image/upload/v12345/pololo/filename.jpg
+    const uploadIndex = pathname.indexOf('/upload/');
+    if (uploadIndex === -1) return null;
+    let rest = pathname.substring(uploadIndex + '/upload/'.length);
+    // quitar prefijo de versión v123456/
+    rest = rest.replace(/^v\d+\//, '');
+    // eliminar extensión
+    const dot = rest.lastIndexOf('.');
+    if (dot !== -1) rest = rest.substring(0, dot);
+    // eliminar slash inicial si existe
+    if (rest.startsWith('/')) rest = rest.substring(1);
+    return rest;
+  } catch (e) {
+    return null;
+  }
+};
 
 // (duplicate simple getProducts removed; the more complete getProducts implementation remains below)
 
@@ -314,7 +337,9 @@ export const createProduct = async (req, res) => {
 
     // Archivos subidos (múltiples imágenes)
     const uploadedFiles = Array.isArray(req.files) ? req.files : [];
-    const uploadedImages = uploadedFiles.map(file => ({ path: `/uploads/${file.filename}` }));
+    // Si usamos Cloudinary, multer-storage-cloudinary devuelve la URL en `file.path`.
+    // Si todavía hay almacenamiento local, caeremos en la ruta `/uploads/filename`.
+    const uploadedImages = uploadedFiles.map(file => ({ path: file.path || file.secure_url || `/uploads/${file.filename}` }));
     const parsedMainIndex = Number.parseInt(mainImageIndex, 10);
     const mainIndex = Number.isInteger(parsedMainIndex) && parsedMainIndex >= 0 && parsedMainIndex < uploadedImages.length
       ? parsedMainIndex
@@ -546,7 +571,7 @@ export const updateProduct = async (req, res) => {
   }
 
   const uploadedFiles = Array.isArray(req.files) ? req.files : [];
-  const uploadedImages = uploadedFiles.map(file => ({ path: `/uploads/${file.filename}` }));
+  const uploadedImages = uploadedFiles.map(file => ({ path: file.path || file.secure_url || `/uploads/${file.filename}` }));
   const parsedMainIndex = Number.parseInt(mainImageIndex, 10);
   const newMainIndex = Number.isInteger(parsedMainIndex) && parsedMainIndex >= 0 && parsedMainIndex < uploadedImages.length
     ? parsedMainIndex
@@ -913,9 +938,9 @@ export const deleteProductImage = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Verificar que la imagen pertenece al producto
+    // Verificar que la imagen pertenece al producto (obtener image_url también)
     const imageCheck = await client.query(
-      'SELECT id, is_main FROM product_images WHERE id = $1 AND product_id = $2',
+      'SELECT id, is_main, image_url FROM product_images WHERE id = $1 AND product_id = $2',
       [imageId, id]
     );
 
@@ -926,8 +951,9 @@ export const deleteProductImage = async (req, res) => {
     }
 
     const wasMain = imageCheck.rows[0].is_main;
+    const removedImageUrl = imageCheck.rows[0].image_url;
 
-    // Eliminar la imagen
+    // Eliminar la imagen en la DB
     await client.query(
       'DELETE FROM product_images WHERE id = $1',
       [imageId]
@@ -970,6 +996,17 @@ export const deleteProductImage = async (req, res) => {
 
     await client.query('COMMIT');
     client.release();
+
+    // Intentar eliminar del CDN (Cloudinary). No abortamos si falla, solo registramos.
+    try {
+      const publicId = getPublicIdFromUrl(removedImageUrl);
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId, { resource_type: 'image', invalidate: true });
+      }
+    } catch (err) {
+      console.error('Error eliminando imagen en Cloudinary:', err);
+    }
+
     res.json({ message: 'Imagen eliminada correctamente' });
   } catch (error) {
     await client.query('ROLLBACK');
@@ -984,6 +1021,18 @@ export const deleteProduct = async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Obtener todas las URLs de imagen asociadas al producto
+    const imagesResult = await pool.query(
+      'SELECT image_url FROM product_images WHERE product_id = $1',
+      [id]
+    );
+
+    const productResult = await pool.query(
+      'SELECT imagen_url FROM products WHERE id = $1',
+      [id]
+    );
+
+    // Borrar el producto (las FK ON DELETE deberían limpiar product_images si está configurado)
     const result = await pool.query(
       'DELETE FROM products WHERE id = $1 RETURNING id',
       [id]
@@ -991,6 +1040,27 @@ export const deleteProduct = async (req, res) => {
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Producto no encontrado' });
+    }
+
+    // Consolidar URLs únicas a eliminar en Cloudinary
+    const urls = new Set();
+    for (const r of imagesResult.rows) if (r.image_url) urls.add(r.image_url);
+    if (productResult.rows[0] && productResult.rows[0].imagen_url) {
+      urls.add(productResult.rows[0].imagen_url);
+    }
+
+    // Intentar eliminar en Cloudinary en background (esperamos las promesas para registrar errores)
+    try {
+      const tasks = Array.from(urls).map(async (url) => {
+        const publicId = getPublicIdFromUrl(url);
+        if (publicId) {
+          return cloudinary.uploader.destroy(publicId, { resource_type: 'image', invalidate: true });
+        }
+        return null;
+      });
+      await Promise.allSettled(tasks);
+    } catch (err) {
+      console.error('Error eliminando imágenes en Cloudinary al borrar producto:', err);
     }
 
     res.json({ message: 'Producto eliminado correctamente' });
