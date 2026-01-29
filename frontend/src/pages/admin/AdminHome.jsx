@@ -15,6 +15,7 @@ import {
 
 import { searchProductsAdmin } from "../../services/productsService";
 import { useToast } from "../../context/ToastContext.jsx";
+import { getImageUrl } from "../../utils/imageUrl.js";
 import "./AdminHome.css";
 
 const API_URL = "http://localhost:4000";
@@ -629,7 +630,7 @@ const handleDrop = async (e, targetItem) => {
                 onDrop={(e) => handleDrop(e, item)}
               >
                 <img
-                  src={`${API_URL}${item.imagen_url}`}
+                  src={getImageUrl(item.imagen_url)}
                   alt={item.titulo}
                   className="admin-carousel-image"
                 />
@@ -675,7 +676,7 @@ const handleDrop = async (e, targetItem) => {
                 onDrop={(e) => handleDrop(e, item)}
               >
                 <img
-                  src={`${API_URL}${item.imagen_mobile_url}`}
+                  src={getImageUrl(item.imagen_mobile_url)}
                   alt={item.titulo}
                   className="admin-carousel-image"
                 />
@@ -763,7 +764,7 @@ const handleDrop = async (e, targetItem) => {
                       <div className="admin-selected-body">
                         {selectedProduct.imagen && (
                           <img
-                            src={selectedProduct.imagen}
+                            src={getImageUrl(selectedProduct.imagen)}
                             alt={selectedProduct.nombre}
                             className="admin-selected-image"
                           />
@@ -820,7 +821,7 @@ const handleDrop = async (e, targetItem) => {
                 >
                   {item.imagen && (
                     <img
-                      src={`${API_URL}${item.imagen}`}
+                      src={getImageUrl(item.imagen)}
                       alt={item.nombre}
                       className="admin-product-image"
                     />
