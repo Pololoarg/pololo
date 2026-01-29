@@ -5,7 +5,6 @@ import router from "./routes/index.routes.js";
 import { testDBConnection } from "./config/db.js";
 import path from "path";
 import { fileURLToPath } from "url";
-import { exec } from "child_process"; // Importación necesaria para el script
 
 // Rutas específicas
 import homeRoutes from "./routes/home.routes.js";
@@ -28,20 +27,19 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Rutas
+// Rutas de la API
 app.use("/api/home", homeRoutes);
 app.use("/api/admin/home", adminHomeRoutes);
 app.use("/api", router);
 
-// Servir imágenes estáticas
+// Servir imágenes estáticas (Solo para desarrollo, en prod usás Cloudinary)
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // Root (Health Check)
-app.get("/", (req, res) => {
+app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
     message: "Pololo API is running",
-    environment: process.env.NODE_ENV || "development",
     timestamp: new Date()
   });
 });
@@ -55,40 +53,21 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404
-app.use((req, res) => {
-  res.status(404).json({ message: "Ruta no encontrada" });
-});
-
 // Iniciar servidor
 const startServer = async () => {
   try {
     // 1. Intentamos conectar a la DB
     await testDBConnection();
     
-    // 2. Ejecutar script de actualización de contraseña si existen las variables
-    if (process.env.ADMIN_PASSWORD && process.env.ADMIN_EMAIL) {
-      console.log("🚀 Detectadas credenciales de Admin en Environment, actualizando...");
-      
-      // Construimos la ruta al script de forma segura (sube un nivel desde src y entra a scripts)
-      const scriptPath = path.join(__dirname, "..", "scripts", "updateAdminPassword.js");
-      
-      exec(`node "${scriptPath}"`, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`❌ Error al ejecutar script de password: ${error.message}`);
-          return;
-        }
-        if (stderr) console.error(`⚠️ Stderr del script: ${stderr}`);
-        console.log(`✅ Resultado del script: ${stdout}`);
-      });
-    }
-
+    // 2. Escuchar en el puerto
     const PORT = envs.PORT || 10000;
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ Backend escuchando en el puerto ${PORT}`);
+      console.log(`🚀 Modo: ${process.env.NODE_ENV || "development"}`);
     });
   } catch (error) {
     console.error("❌ No se pudo iniciar el servidor:", error);
+    process.exit(1); // Cerramos el proceso si no hay DB
   }
 };
 
