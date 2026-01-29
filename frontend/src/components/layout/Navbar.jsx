@@ -17,6 +17,10 @@ function Navbar() {
   const { user, logout } = useAuth();
   const searchRef = useRef(null);
 
+  // Logo configuration: allow overriding via Vite env vars for flexible variants
+  const logoUrl = import.meta.env.VITE_LOGO_URL || "/logo2.png";
+  const logoMobileUrl = import.meta.env.VITE_LOGO_MOBILE_URL || "/logo-mobile.png";
+
   // Cerrar sugerencias al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
