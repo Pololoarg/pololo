@@ -116,7 +116,15 @@ function AdminEditarProducto() {
       if (sizeType) {
         try {
           const response = await apiClient.get(`/products/sizes/type/${sizeType}`);
-          setAvailableSizes(response.data);
+          let sizes = response.data;
+          
+          // Filtrar talles de pantalones a solo los permitidos
+          if (sizeType === 'pantalon') {
+            const allowedPantalonesSizes = ['38', '40', '42', '44', '46', '48'];
+            sizes = sizes.filter(s => allowedPantalonesSizes.includes(s.size));
+          }
+          
+          setAvailableSizes(sizes);
         } catch (err) {
           console.error('Error cargando talles:', err);
           setAvailableSizes([]);

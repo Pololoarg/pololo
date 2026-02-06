@@ -14,10 +14,19 @@ function Buzos() {
   const [error, setError]       = useState(null);
   const [hoveredProduct, setHoveredProduct] = useState(null);
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const size = searchParams.get("size") || "";
   const priceOrder = searchParams.get("price") || "";
+
+  // Asegurar que la categoría esté en los parámetros
+  useEffect(() => {
+    if (!searchParams.get("category")) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set("category", "buzos");
+      setSearchParams(newParams);
+    }
+  }, []);
 
   useEffect(() => {
     setLoading(true);

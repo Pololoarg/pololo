@@ -196,7 +196,7 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.7);
-  z-index: 998;
+  z-index: 1001;
   backdrop-filter: blur(4px);
 }
 
@@ -221,7 +221,7 @@
     width: 85vw;
     max-width: 320px;
     max-height: 100vh;
-    z-index: 999;
+    z-index: 1002;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
     border-radius: 0;

@@ -16,7 +16,7 @@ function Carrito() {
 
   // 👉 NÚMERO DE WHATSAPP DEL NEGOCIO
   // Formato: 549 + código de área + número
-  const WHATSAPP_NUMBER = "5493516178552";
+  const WHATSAPP_NUMBER = "5493584905227";
 
   const handleSendWhatsApp = () => {
     if (cart.length === 0) return;

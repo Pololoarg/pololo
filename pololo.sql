@@ -87,23 +87,13 @@ SELECT id, 'XL' FROM size_types WHERE nombre = 'ropa';
 INSERT INTO sizes (size_type_id, valor)
 SELECT id, '38' FROM size_types WHERE nombre = 'pantalon'
 UNION ALL
-SELECT id, '39' FROM size_types WHERE nombre = 'pantalon'
-UNION ALL
 SELECT id, '40' FROM size_types WHERE nombre = 'pantalon'
-UNION ALL
-SELECT id, '41' FROM size_types WHERE nombre = 'pantalon'
 UNION ALL
 SELECT id, '42' FROM size_types WHERE nombre = 'pantalon'
 UNION ALL
-SELECT id, '43' FROM size_types WHERE nombre = 'pantalon'
-UNION ALL
 SELECT id, '44' FROM size_types WHERE nombre = 'pantalon'
 UNION ALL
-SELECT id, '45' FROM size_types WHERE nombre = 'pantalon'
-UNION ALL
 SELECT id, '46' FROM size_types WHERE nombre = 'pantalon'
-UNION ALL
-SELECT id, '47' FROM size_types WHERE nombre = 'pantalon'
 UNION ALL
 SELECT id, '48' FROM size_types WHERE nombre = 'pantalon';
 

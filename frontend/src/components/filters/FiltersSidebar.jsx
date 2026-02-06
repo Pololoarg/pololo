@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { apiClient } from "../../services/apiClient";
 import "./FiltersSidebar.css";
 
 export default function FiltersSidebar({ filters, subcategories = [] }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isOpen, setIsOpen] = useState(false);
+  const [availableSizes, setAvailableSizes] = useState([]);
 
   // Estados temporales para filtros (no aplicados hasta hacer clic en "Filtrar")
   const [tempCategory, setTempCategory] = useState(searchParams.get("category") || "");
@@ -18,6 +20,45 @@ export default function FiltersSidebar({ filters, subcategories = [] }) {
   const activeSize = searchParams.get("size");
   const activePrice = searchParams.get("price");
   const activeSubcategory = searchParams.get("subcategory");
+
+  // Cargar talles según categoría
+  useEffect(() => {
+    const loadSizes = async () => {
+      const category = tempCategory || activeCategory;
+      
+      if (!category || category === "marroquineria") {
+        setAvailableSizes([]);
+        return;
+      }
+
+      let sizeType = "";
+      if (category === "remeras" || category === "buzos") {
+        sizeType = "ropa";
+      } else if (category === "pantalones") {
+        sizeType = "pantalon";
+      }
+
+      if (!sizeType) return;
+
+      try {
+        const response = await apiClient.get(`/products/sizes/type/${sizeType}`);
+        let sizes = response.data;
+        
+        // Filtrar talles de pantalones
+        if (sizeType === 'pantalon') {
+          const allowedPantalonesSizes = ['38', '40', '42', '44', '46', '48'];
+          sizes = sizes.filter(s => allowedPantalonesSizes.includes(s.size));
+        }
+        
+        setAvailableSizes(sizes);
+      } catch (err) {
+        console.error("Error cargando talles", err);
+        setAvailableSizes([]);
+      }
+    };
+
+    loadSizes();
+  }, [tempCategory, activeCategory]);
 
   const toggleSubcategory = (sub) => {
     if (tempSubcategories.includes(sub)) {
@@ -125,20 +166,20 @@ export default function FiltersSidebar({ filters, subcategories = [] }) {
       )}
 
       {/* TALLES */}
-      {filters.includes("size") && (
+      {filters.includes("size") && availableSizes.length > 0 && (
         <div className="filter-section">
           <h6 className="filter-section-title">Talle</h6>
           <div className="filter-options size-options">
-            {["XS", "S", "M", "L", "XL"].map((size) => (
+            {availableSizes.map((sizeObj) => (
               <button
                 type="button"
-                key={size}
+                key={sizeObj.id}
                 className={`filter-option size-option ${
-                  tempSize === size ? "active" : ""
+                  tempSize === sizeObj.size ? "active" : ""
                 }`}
-                onClick={() => setTempSize(tempSize === size ? "" : size)}
+                onClick={() => setTempSize(tempSize === sizeObj.size ? "" : sizeObj.size)}
               >
-                {size}
+                {sizeObj.size}
               </button>
             ))}
           </div>

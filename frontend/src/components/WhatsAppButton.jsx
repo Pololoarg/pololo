@@ -10,7 +10,7 @@ function WhatsAppButton() {
 
   return (
     <a
-      href="https://wa.me/5493515100943?text=Hola!%20quiero%20realizar%20una%20consulta%20acerca%20de..."
+      href="https://wa.me/5493584905227?text=Hola!%20quiero%20realizar%20una%20consulta%20acerca%20de..."
       className="whatsapp-float"
       target="_blank"
       rel="noopener noreferrer"
