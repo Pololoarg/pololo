@@ -40,7 +40,7 @@ function Footer() {
           <h3 className="policy-title">POLÍTICA DE CAMBIOS</h3>
           <ul className="policy-list">
             <li>Los cambios pueden realizarse dentro de los 10 días posteriores a la compra, el plazo se tomará desde el día en el que recibió el pedido.</li>
-            <li>El cambio se realiza por correo directamente. Para gestionarlo contactate con nosotros dentro de los 10 días corridos posteriores a la recepción del pedido por mail: <a href="pololoarg.2024@gmail.com">pololoarg.2024@gmail.com</a></li>
+            <li>El cambio se realiza por correo directamente. Para gestionarlo contactate con nosotros dentro de los 10 días corridos posteriores a la recepción del pedido por mail: pololoarg.2024@gmail.com</li>
             <li>El costo logístico del cambio y devoluciones estará a cargo del cliente y el valor dependerá de la zona en la que resida.</li>
             <li>Es condición fundamental para el cambio, que los productos sean preservados en excelentes condiciones y con etiqueta.</li>
           </ul>
