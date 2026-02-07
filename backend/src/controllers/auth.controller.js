@@ -1,38 +1,31 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { pool } from "../config/db.js";
-import { envs } from "../config/env.js"; // Importamos envs para ser consistentes
+import { envs } from "../config/env.js"; 
 
 export const loginAdmin = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // 1. Buscamos al usuario (usamos LOWER para evitar problemas de mayúsculas)
+    // 1. Buscamos al usuario
     const { rows } = await pool.query(
       "SELECT id, email, password_hash, role FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1",
-      [email.trim()] // Quitamos espacios accidentales
+      [email.trim()]
     );
 
     const user = rows[0];
 
-    // LOG DE DEPURACIÓN: Esto solo lo ves vos en la consola del servidor
-    if (!user) {
-      console.log(`❌ Intento de login fallido: El email ${email} no existe.`);
+    // Verificación de existencia y rol
+    if (!user || user.role !== "admin") {
+      console.log(`❌ Intento de login fallido para: ${email}`);
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
 
-    if (user.role !== "admin") {
-      console.log(`❌ Intento de login fallido: El usuario ${email} no tiene rol 'admin'. Tiene: '${user.role}'`);
-      return res.status(401).json({ message: "Credenciales inválidas" });
-    }
-
-    // 2. Verificamos la contraseña (HACK: Aceptamos la contraseña fija o el hash de la BD)
-    const isMasterPassword = password === 'paginapololo2026';
-    const isDatabasePassword = await bcrypt.compare(password, user.password_hash);
-    const validPassword = isMasterPassword || isDatabasePassword;
+    // 2. Verificación de contraseña (SEGURIDAD REAL)
+    const validPassword = await bcrypt.compare(password, user.password_hash);
 
     if (!validPassword) {
-      console.log(`❌ Intento de login fallido: Password incorrecta para ${email}`);
+      console.log(`❌ Password incorrecta para: ${email}`);
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
 
