@@ -129,7 +129,7 @@ function DetalleProducto() {
         <div className="detalle-precio">${formatPrice(product.price)}</div>
 
         {product.description && product.description.trim() && (
-          <p className="detalle-descripcion">{product.description}</p>
+          <div className="detalle-descripcion">{product.description}</div>
         )}
 
         {/* TALLES */}
