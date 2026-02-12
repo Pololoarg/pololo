@@ -61,7 +61,7 @@ function AdminNuevoProducto() {
           
           // Filtrar talles de pantalones a solo los permitidos
           if (sizeType === 'pantalon') {
-            const allowedPantalonesSizes = ['38', '40', '42', '44', '46', '48'];
+            const allowedPantalonesSizes = ['34', '36', '38', '40', '42', '44', '46', '48'];
             sizes = sizes.filter(s => allowedPantalonesSizes.includes(s.size));
           }
           

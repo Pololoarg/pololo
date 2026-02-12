@@ -85,6 +85,10 @@ SELECT id, 'XL' FROM size_types WHERE nombre = 'ropa';
 
 -- Datos iniciales para talles de pantalón
 INSERT INTO sizes (size_type_id, valor)
+SELECT id, '34' FROM size_types WHERE nombre = 'pantalon'
+UNION ALL
+SELECT id, '36' FROM size_types WHERE nombre = 'pantalon'
+UNION ALL
 SELECT id, '38' FROM size_types WHERE nombre = 'pantalon'
 UNION ALL
 SELECT id, '40' FROM size_types WHERE nombre = 'pantalon'
