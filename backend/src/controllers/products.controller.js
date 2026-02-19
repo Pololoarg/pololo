@@ -1,6 +1,10 @@
 // src/controllers/products.controller.js
 import { pool } from '../config/db.js';
 import { cloudinary } from '../config/cloudinary.js';
+import fs from 'fs';
+import path from 'path';
+import sharp from 'sharp';
+import { fileURLToPath } from 'url';
 
 // Extrae el `public_id` de una URL de Cloudinary.
 const getPublicIdFromUrl = (url) => {
@@ -21,6 +25,92 @@ const getPublicIdFromUrl = (url) => {
     return rest;
   } catch (e) {
     return null;
+  }
+};
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const PRODUCTS_UPLOAD_DIR = path.join(__dirname, '../../uploads/products');
+const MAX_IMAGE_BYTES = 500 * 1024;
+const MAX_WIDTH = 1600;
+const MAX_HEIGHT = 1600;
+const QUALITY_START = 80;
+const QUALITY_MIN = 40;
+const QUALITY_STEP = 10;
+
+const ensureProductsUploadDir = async () => {
+  await fs.promises.mkdir(PRODUCTS_UPLOAD_DIR, { recursive: true });
+};
+
+const compressImageBuffer = async (inputBuffer) => {
+  let quality = QUALITY_START;
+  let outputBuffer = null;
+
+  while (quality >= QUALITY_MIN) {
+    // eslint-disable-next-line no-await-in-loop
+    const candidate = await sharp(inputBuffer)
+      .rotate()
+      .resize({
+        width: MAX_WIDTH,
+        height: MAX_HEIGHT,
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .jpeg({ quality, mozjpeg: true })
+      .toBuffer();
+
+    outputBuffer = candidate;
+
+    if (candidate.length <= MAX_IMAGE_BYTES) {
+      break;
+    }
+
+    quality -= QUALITY_STEP;
+  }
+
+  return outputBuffer;
+};
+
+const processUploadedImages = async (files = []) => {
+  if (!files.length) return [];
+
+  await ensureProductsUploadDir();
+
+  const results = [];
+
+  for (const file of files) {
+    // eslint-disable-next-line no-await-in-loop
+    const buffer = await compressImageBuffer(file.buffer);
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const filename = `${unique}.jpg`;
+    const outputPath = path.join(PRODUCTS_UPLOAD_DIR, filename);
+
+    // eslint-disable-next-line no-await-in-loop
+    await fs.promises.writeFile(outputPath, buffer);
+
+    results.push({ path: `/uploads/products/${filename}` });
+  }
+
+  return results;
+};
+
+const getLocalUploadPath = (imageUrl) => {
+  if (!imageUrl || typeof imageUrl !== 'string') return null;
+  if (!imageUrl.startsWith('/uploads/')) return null;
+  const relativePath = imageUrl.replace(/^\//, '');
+  return path.join(__dirname, '../../', relativePath);
+};
+
+const removeLocalFileIfExists = async (imageUrl) => {
+  const localPath = getLocalUploadPath(imageUrl);
+  if (!localPath) return;
+  try {
+    await fs.promises.unlink(localPath);
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      console.error('Error eliminando imagen local:', err);
+    }
   }
 };
 
@@ -337,9 +427,7 @@ export const createProduct = async (req, res) => {
 
     // Archivos subidos (múltiples imágenes)
     const uploadedFiles = Array.isArray(req.files) ? req.files : [];
-    // Si usamos Cloudinary, multer-storage-cloudinary devuelve la URL en `file.path`.
-    // Si todavía hay almacenamiento local, caeremos en la ruta `/uploads/filename`.
-    const uploadedImages = uploadedFiles.map(file => ({ path: file.path || file.secure_url || `/uploads/${file.filename}` }));
+    const uploadedImages = await processUploadedImages(uploadedFiles);
     const parsedMainIndex = Number.parseInt(mainImageIndex, 10);
     const mainIndex = Number.isInteger(parsedMainIndex) && parsedMainIndex >= 0 && parsedMainIndex < uploadedImages.length
       ? parsedMainIndex
@@ -571,7 +659,7 @@ export const updateProduct = async (req, res) => {
   }
 
   const uploadedFiles = Array.isArray(req.files) ? req.files : [];
-  const uploadedImages = uploadedFiles.map(file => ({ path: file.path || file.secure_url || `/uploads/${file.filename}` }));
+  const uploadedImages = await processUploadedImages(uploadedFiles);
   const parsedMainIndex = Number.parseInt(mainImageIndex, 10);
   const newMainIndex = Number.isInteger(parsedMainIndex) && parsedMainIndex >= 0 && parsedMainIndex < uploadedImages.length
     ? parsedMainIndex
@@ -997,6 +1085,8 @@ export const deleteProductImage = async (req, res) => {
     await client.query('COMMIT');
     client.release();
 
+    await removeLocalFileIfExists(removedImageUrl);
+
     // Intentar eliminar del CDN (Cloudinary). No abortamos si falla, solo registramos.
     try {
       const publicId = getPublicIdFromUrl(removedImageUrl);
@@ -1047,6 +1137,11 @@ export const deleteProduct = async (req, res) => {
     for (const r of imagesResult.rows) if (r.image_url) urls.add(r.image_url);
     if (productResult.rows[0] && productResult.rows[0].imagen_url) {
       urls.add(productResult.rows[0].imagen_url);
+    }
+
+    for (const url of urls) {
+      // eslint-disable-next-line no-await-in-loop
+      await removeLocalFileIfExists(url);
     }
 
     // Intentar eliminar en Cloudinary en background (esperamos las promesas para registrar errores)

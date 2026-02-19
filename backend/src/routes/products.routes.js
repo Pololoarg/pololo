@@ -12,7 +12,7 @@ import {
   updateProductSizes
 } from "../controllers/products.controller.js";
 
-import { cloudUpload } from "../config/cloudinary.js";
+import { uploadProductImages } from "../middlewares/uploadProducts.js";
 import { verifyToken } from "../middlewares/auth.middleware.js";
 
 const router = Router();
@@ -40,8 +40,8 @@ router.get("/:id/sizes", getProductSizes);
    ADMIN
 ========================= */
 
-router.post("/", verifyToken, cloudUpload.array("images", 5), createProduct);
-router.put("/:id", verifyToken, cloudUpload.array("images", 5), updateProduct);
+router.post("/", verifyToken, uploadProductImages.array("images", 5), createProduct);
+router.put("/:id", verifyToken, uploadProductImages.array("images", 5), updateProduct);
 router.put("/:id/sizes", verifyToken, updateProductSizes);
 router.delete("/:id/images/:imageId", verifyToken, deleteProductImage);
 router.delete("/:id", verifyToken, deleteProduct);

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { createProduct } from "../../services/productsService";
 import { apiClient } from "../../services/apiClient";
+import { compressImageToMaxSize } from "../../utils/compressImage";
 
 function AdminNuevoProducto() {
   const navigate = useNavigate();
@@ -110,7 +111,7 @@ function AdminNuevoProducto() {
   };
 
   // 👉 cambios en input file (agregar una imagen a la vez)
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const files = Array.from(e.target.files || []);
 
     if (files.length === 0) {
@@ -119,7 +120,8 @@ function AdminNuevoProducto() {
 
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     const minSize = 10 * 1024; // 10KB
-    const maxSize = 2 * 1024 * 1024; // 2MB
+    const maxSize = 30 * 1024 * 1024; // 30MB
+    const targetSize = 500 * 1024; // 500KB
 
     const file = files[0]; // Solo procesar la primera imagen seleccionada
 
@@ -129,7 +131,7 @@ function AdminNuevoProducto() {
       return;
     }
     if (file.size > maxSize) {
-      setError("La imagen no puede superar los 2MB");
+      setError("La imagen no puede superar los 30MB");
       e.target.value = ''; // Limpiar el input
       return;
     }
@@ -139,13 +141,31 @@ function AdminNuevoProducto() {
       return;
     }
 
+    let finalFile = file;
+
+    if (file.size > targetSize) {
+      try {
+        finalFile = await compressImageToMaxSize(file, {
+          maxSizeBytes: targetSize,
+          maxWidth: 1600,
+          maxHeight: 1600,
+          initialQuality: 0.8
+        });
+      } catch (err) {
+        console.error("Error comprimiendo imagen:", err);
+        setError("No se pudo comprimir la imagen. Probá con otra foto.");
+        e.target.value = '';
+        return;
+      }
+    }
+
     setError(null);
     // Agregar la nueva imagen a las existentes
     setForm((prev) => ({
       ...prev,
-      imageFiles: [...prev.imageFiles, file],
+      imageFiles: [...prev.imageFiles, finalFile],
     }));
-    setImagePreviews((prev) => [...prev, URL.createObjectURL(file)]);
+    setImagePreviews((prev) => [...prev, URL.createObjectURL(finalFile)]);
     e.target.value = ''; // Limpiar el input para poder agregar más
   };
 
@@ -300,8 +320,9 @@ function AdminNuevoProducto() {
           />
           <div className="form-text">
             • Selecciona una imagen a la vez y haz clic en "Seleccionar archivo" para agregar más<br />
-            • Mínimo: 10 KB | Máximo: 2 MB (por imagen)<br />
+            • Mínimo: 10 KB | Máximo: 30 MB (por imagen)<br />
             • Formatos: JPG, PNG o WEBP<br />
+            • Si supera 500 KB se comprime automaticamente antes de subir<br />
             • Puedes agregar varias y elegir cuál es la principal
           </div>
         </div>
