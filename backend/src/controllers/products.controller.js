@@ -31,17 +31,12 @@ const getPublicIdFromUrl = (url) => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PRODUCTS_UPLOAD_DIR = path.join(__dirname, '../../uploads/products');
 const MAX_IMAGE_BYTES = 500 * 1024;
 const MAX_WIDTH = 1600;
 const MAX_HEIGHT = 1600;
 const QUALITY_START = 80;
 const QUALITY_MIN = 40;
 const QUALITY_STEP = 10;
-
-const ensureProductsUploadDir = async () => {
-  await fs.promises.mkdir(PRODUCTS_UPLOAD_DIR, { recursive: true });
-};
 
 const compressImageBuffer = async (inputBuffer) => {
   let quality = QUALITY_START;
@@ -75,21 +70,29 @@ const compressImageBuffer = async (inputBuffer) => {
 const processUploadedImages = async (files = []) => {
   if (!files.length) return [];
 
-  await ensureProductsUploadDir();
-
   const results = [];
 
   for (const file of files) {
     // eslint-disable-next-line no-await-in-loop
-    const buffer = await compressImageBuffer(file.buffer);
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const filename = `${unique}.jpg`;
-    const outputPath = path.join(PRODUCTS_UPLOAD_DIR, filename);
-
+    const compressedBuffer = await compressImageBuffer(file.buffer);
+    
     // eslint-disable-next-line no-await-in-loop
-    await fs.promises.writeFile(outputPath, buffer);
+    const uploadResult = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'pololo',
+          resource_type: 'auto',
+          format: 'jpg'
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      uploadStream.end(compressedBuffer);
+    });
 
-    results.push({ path: `/uploads/products/${filename}` });
+    results.push({ path: uploadResult.secure_url });
   }
 
   return results;
