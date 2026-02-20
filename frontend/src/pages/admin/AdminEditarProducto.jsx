@@ -24,6 +24,7 @@ function AdminEditarProducto() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
   
   // Estados para talles
@@ -277,6 +278,12 @@ function AdminEditarProducto() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Evitar múltiples envíos
+    if (isSubmitting) {
+      return;
+    }
+    
     setError(null);
 
     // Validar que marroquinería tenga subcategoría
@@ -292,6 +299,8 @@ function AdminEditarProducto() {
     }
 
     try {
+      setIsSubmitting(true);
+      
       // Para marroquinería, usar el stock actualizado
       let sizes = selectedSizes.filter((s) => s.stock > 0);
       
@@ -312,6 +321,7 @@ function AdminEditarProducto() {
     } catch (err) {
       console.error(err);
       setError("Hubo un error al actualizar el producto");
+      setIsSubmitting(false);
     }
   };
 
@@ -588,8 +598,12 @@ function AdminEditarProducto() {
           </label>
         </div>
 
-        <button type="submit" className="btn btn-primary me-2">
-          Guardar cambios
+        <button 
+          type="submit" 
+          className="btn btn-primary me-2"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Guardando..." : "Guardar cambios"}
         </button>
         <Link to="/admin/productos" className="btn btn-secondary">
           Cancelar
