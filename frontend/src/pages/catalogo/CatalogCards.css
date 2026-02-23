@@ -135,4 +135,10 @@
   .product-price {
     font-size: 18px;
   }
+  
+  .product-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
 }
